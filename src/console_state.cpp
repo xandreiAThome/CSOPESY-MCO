@@ -36,6 +36,8 @@ bool UninitializedState::accepts(const ParsedCommand &command) const {
 void UninitializedState::handle(Console &console,
                                 const ParsedCommand &command) {
   if (command.type == ConsoleCommandType::INIT) {
+    clearTerminal();
+    printTextFile("assets/introText.txt");
     console.setState(std::make_unique<MainMenuState>());
   }
 }
@@ -88,6 +90,7 @@ void ProcessScreenState::handle(Console &console,
                                 const ParsedCommand &command) {
   if (command.type == ConsoleCommandType::EXIT) {
     clearTerminal();
+    printTextFile("assets/introText.txt");
     console.setState(std::make_unique<MainMenuState>());
     return;
   }
