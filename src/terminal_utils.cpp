@@ -3,6 +3,17 @@
 #include <iostream>
 #include <fstream>
 
+#ifdef _WIN32
+#  define NOMINMAX
+#  include <windows.h>
+#endif
+
+void setConsoleOutputUtf8() {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+}
+
 void clearTerminal() { std::cout << "\033[2J\033[H"; }
 
 void printTextFile(std::string fileName){
