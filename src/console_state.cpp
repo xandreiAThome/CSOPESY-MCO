@@ -54,7 +54,7 @@ bool MainMenuState::accepts(const ParsedCommand &command) const {
 
 void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   if (command.screenType == ScreenCommandType::LIST) {
-    std::cout << "screen -ls command recognized\n";
+    std::cout << "screen -ls command recognized. Doing something.\n";
     return;
   }
 
@@ -66,17 +66,17 @@ void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_START) {
-    std::cout << "scheduler-start command recognized\n";
+    std::cout << "scheduler-start command recognized. Doing something.\n";
     return;
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_STOP) {
-    std::cout << "scheduler-stop command recognized\n";
+    std::cout << "scheduler-stop command recognized. Doing something.\n";
     return;
   }
 
   if (command.type == ConsoleCommandType::REPORT_UTIL) {
-    std::cout << "report-util command recognized\n";
+    std::cout << "report-util command recognized. Doing something.\n";
     return;
   }
 }
@@ -96,7 +96,7 @@ void ProcessScreenState::handle(Console &console,
   }
 
   if (command.type == ConsoleCommandType::PROCESS_SMI) {
-    std::cout << "process-smi command recognized\n";
+    std::cout << "process-smi command recognized. Doing something.\n";
     return;
   }
 }
