@@ -4,7 +4,7 @@
 
 - CMake 3.16 or newer
 - A C++20-capable compiler
-- Linux: GNU Make or another CMake-compatible build tool
+- Linux/macOS: GNU Make or another CMake-compatible build tool
 - Windows: Visual Studio 2022 or Visual Studio Build Tools
 
 ## Project Layout
@@ -16,7 +16,7 @@
 
 ## Build
 
-### Linux
+### Linux/macOS
 
 Configure and build with the Linux presets:
 
@@ -53,7 +53,7 @@ If Visual Studio asks for a kit or configuration, choose the Windows preset that
 
 Open the folder in VS Code and use the CMake Tools extension.
 
-- On Linux, choose `linux-debug` or `linux-release`.
+- On Linux/macOS, choose `linux-debug` or `linux-release`.
 - On Windows, choose `windows-debug` or `windows-release`.
 
 The project uses CMake presets, so VS Code can configure the same build layout consistently across machines.
