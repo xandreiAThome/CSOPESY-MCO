@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- CMake 3.16 or newer
+- CMake 3.21 or newer
 - A C++20-capable compiler
 - Linux/macOS: GNU Make or another CMake-compatible build tool
 - Windows: Visual Studio 2022 or Visual Studio Build Tools
@@ -40,7 +40,7 @@ For a release build, use `windows-release` instead of `windows-debug`.
 
 ## Visual Studio IDE Setup
 
-To use the project in Visual Studio 2022:
+To use the project in Visual Studio 2026:
 
 1. Open the project folder in Visual Studio.
 2. Let Visual Studio detect the CMake project automatically.

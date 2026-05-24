@@ -10,5 +10,7 @@ void printTextFile(std::string fileName){
 
     if(f.is_open()){
         std::cout << f.rdbuf();
+    } else {
+        std::cerr << "Unable to open text file: " << fileName << '\n';
     }
 }

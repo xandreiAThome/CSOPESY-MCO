@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 project(csopesy LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -13,6 +13,12 @@ add_executable(csopesy
 
 target_compile_features(csopesy PRIVATE cxx_std_20)
 target_include_directories(csopesy PRIVATE include)
+
+add_custom_command(TARGET csopesy POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+		  "${PROJECT_SOURCE_DIR}/assets"
+		  "$<TARGET_FILE_DIR:csopesy>/assets"
+)
 
 target_compile_options(csopesy PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8>
