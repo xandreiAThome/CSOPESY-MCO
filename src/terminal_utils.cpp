@@ -14,7 +14,10 @@ void setConsoleOutputUtf8() {
 #endif
 }
 
-void clearTerminal() { std::cout << "\033[2J\033[H"; }
+void clearTerminal() { 
+    std::cout << "\033[2J\033[H"; 
+    printTextFile("assets/introText.txt");
+}
 
 void printTextFile(std::string fileName){
     std::ifstream f(fileName);
