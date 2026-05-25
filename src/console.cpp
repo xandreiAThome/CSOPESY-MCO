@@ -8,7 +8,8 @@
 
 Console::Console() : current_state(std::make_unique<UninitializedState>()) {
   if (current_state) {
-    clearTerminal();
+    system("tput reset");
+    printTextFile("assets/introText.txt");
     std::cout << "Transitioned to: " << current_state->current_state() << '\n';
   }
 }

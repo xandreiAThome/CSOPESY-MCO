@@ -14,12 +14,13 @@ void setConsoleOutputUtf8() {
 #endif
 }
 
-void clearTerminal() { 
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
+void clearTerminal() {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("tput reset");
+    fflush(stdout);
+#endif
 
     printTextFile("assets/introText.txt");
 }
