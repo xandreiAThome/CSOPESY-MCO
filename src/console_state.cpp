@@ -1,6 +1,7 @@
 #include "console.hpp"
 #include "parser.hpp"
 #include "terminal_utils.hpp"
+#include "config.hpp"
 #include <iostream>
 #include <memory>
 
@@ -36,8 +37,25 @@ bool UninitializedState::accepts(const ParsedCommand &command) const {
 void UninitializedState::handle(Console &console,
                                 const ParsedCommand &command) {
   if (command.type == ConsoleCommandType::INIT) {
+    bool configSuccess = Config::get().init();
     clearTerminal();
     console.setState(std::make_unique<MainMenuState>());
+
+    if (configSuccess) {
+        std::cout << "Settings initialized:\n";
+        std::cout << "Number of CPUs: " << Config::get().numCpu << '\n';
+        std::cout << "Scheduler: "
+            << (Config::get().scheduler == SchedulerType::FCFS ? "FCFS" : "RR")
+            << '\n';
+        std::cout << "Quantum Cycles: " << Config::get().quantumCycles << '\n';
+        std::cout << "Batch Process Frequency: " << Config::get().batchProcessFreq << '\n';
+        std::cout << "Minimum Instructions: " << Config::get().minIns << '\n';
+        std::cout << "Maximum Instructions: " << Config::get().maxIns << '\n';
+        std::cout << "Delay Per Execution: " << Config::get().delayPerExec << '\n';
+    }
+    else {
+        std::cout << "Errors found in config.txt \n";
+    }
   }
 }
 
