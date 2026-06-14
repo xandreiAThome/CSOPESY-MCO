@@ -25,7 +25,14 @@ bool Config::init() {
 	}
 
 	while (std::getline(configFile, setting)) {
-        std::string settingVal = setting.substr(setting.find(' ') + 1);
+		size_t spacePos = setting.find(' ');
+
+		if (spacePos == std::string::npos) {
+			std::cout << "Invalid config line: " << setting << '\n';
+			return false;
+		}
+
+		std::string settingVal = setting.substr(spacePos + 1);
         settingVec.push_back(settingVal);
 	}
 
@@ -34,18 +41,25 @@ bool Config::init() {
 		return false;
 	}
 
-	numCpu = std::stoi(settingVec[0]);
-	
+	// Set scheduler
 	if (settingVec[1] == "\"fcfs\"") scheduler = SchedulerType::FCFS;
 	else if (settingVec[1] == "\"rr\"") scheduler = SchedulerType::RR;
-	else std::cout << "Invalid scheduler type in config.txt \n";
+	else return false;
 
-	quantumCycles = std::stoi(settingVec[2]);
-	batchProcessFreq = std::stoi(settingVec[3]);
-	minIns = std::stoi(settingVec[4]);
-	maxIns = std::stoi(settingVec[5]);
-	delayPerExec = std::stoi(settingVec[6]);
-
+	// Set numeric settings
+	try {
+		numCpu = std::stoi(settingVec[0]);
+		quantumCycles = std::stoi(settingVec[2]);
+		batchProcessFreq = std::stoi(settingVec[3]);
+		minIns = std::stoi(settingVec[4]);
+		maxIns = std::stoi(settingVec[5]);
+		delayPerExec = std::stoi(settingVec[6]);
+	}
+	catch (const std::exception&) {
+		std::cout << "Invalid numeric setting in config.txt\n";
+		return false;
+	}
+	
 	configFile.close();
 
 	return true;

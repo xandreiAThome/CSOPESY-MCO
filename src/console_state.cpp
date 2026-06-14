@@ -39,9 +39,9 @@ void UninitializedState::handle(Console &console,
   if (command.type == ConsoleCommandType::INIT) {
     bool configSuccess = Config::get().init();
     clearTerminal();
-    console.setState(std::make_unique<MainMenuState>());
-
+    
     if (configSuccess) {
+        console.setState(std::make_unique<MainMenuState>());
         std::cout << "Settings initialized:\n";
         std::cout << "Number of CPUs: " << Config::get().numCpu << '\n';
         std::cout << "Scheduler: "
