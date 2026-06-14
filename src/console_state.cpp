@@ -1,7 +1,7 @@
 #include "console.hpp"
 #include "parser.hpp"
 #include "terminal_utils.hpp"
-#include "config.hpp"
+#include "globals.hpp"
 #include <iostream>
 #include <memory>
 
@@ -37,21 +37,21 @@ bool UninitializedState::accepts(const ParsedCommand &command) const {
 void UninitializedState::handle(Console &console,
                                 const ParsedCommand &command) {
   if (command.type == ConsoleCommandType::INIT) {
-    bool configSuccess = Config::get().init();
+    bool configSuccess = Globals::get().init();
     clearTerminal();
     
     if (configSuccess) {
         console.setState(std::make_unique<MainMenuState>());
         std::cout << "Settings initialized:\n";
-        std::cout << "Number of CPUs: " << Config::get().numCpu << '\n';
+        std::cout << "Number of CPUs: " << Globals::get().numCpu << '\n';
         std::cout << "Scheduler: "
-            << (Config::get().scheduler == SchedulerType::FCFS ? "FCFS" : "RR")
+            << (Globals::get().scheduler == SchedulerType::FCFS ? "FCFS" : "RR")
             << '\n';
-        std::cout << "Quantum Cycles: " << Config::get().quantumCycles << '\n';
-        std::cout << "Batch Process Frequency: " << Config::get().batchProcessFreq << '\n';
-        std::cout << "Minimum Instructions: " << Config::get().minIns << '\n';
-        std::cout << "Maximum Instructions: " << Config::get().maxIns << '\n';
-        std::cout << "Delay Per Execution: " << Config::get().delayPerExec << '\n';
+        std::cout << "Quantum Cycles: " << Globals::get().quantumCycles << '\n';
+        std::cout << "Batch Process Frequency: " << Globals::get().batchProcessFreq << '\n';
+        std::cout << "Minimum Instructions: " << Globals::get().minIns << '\n';
+        std::cout << "Maximum Instructions: " << Globals::get().maxIns << '\n';
+        std::cout << "Delay Per Execution: " << Globals::get().delayPerExec << '\n';
     }
     else {
         std::cout << "Errors found in config.txt \n";

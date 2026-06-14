@@ -1,11 +1,11 @@
-#include "config.hpp"
+#include "globals.hpp"
 #include <fstream>
 #include <string>
 #include <vector>
 #include <iostream>
 
-Config& Config::get() {
-	static Config instance;
+Globals& Globals::get() {
+	static Globals instance;
 	return instance;
 }
 
@@ -13,11 +13,11 @@ Config& Config::get() {
 
 // std::cout was used for debugging. 
 // only displays if you remove clear screen from initialize command in console_state.cpp
-bool Config::init() {
+bool Globals::init() {
 	std::string setting;
 	std::vector<std::string> settingVec;
 
-	std::ifstream configFile("src/config.txt");
+	std::ifstream configFile("config.txt");
 
 	if (!configFile) {
 		std::cout << "Failed to open config.txt\n";

@@ -1,11 +1,14 @@
 #pragma once
+#include <atomic>
+
 
 enum SchedulerType {
 	FCFS,
 	RR
 };
 
-struct Config{
+struct Globals {
+	// config.txt
 	int numCpu;
 	SchedulerType scheduler;
 	int quantumCycles;
@@ -14,7 +17,12 @@ struct Config{
 	int maxIns;
 	int delayPerExec;
 
-	static Config& get();
+	bool running = true;
+
+	// updates per frame
+	std::atomic<unsigned long long> cpuCycles = 0;
+
+	static Globals& get();
 	bool init();
 
 };
