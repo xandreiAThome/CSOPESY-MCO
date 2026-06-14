@@ -18,13 +18,18 @@ public:
     };
 
     Process(const std::string& processName, int processId, int numInstructions)
-        : name(processName), id(processId), totalInstructions(numInstructions), remainingInstructions(numInstructions) {
+        : name(processName), id(processId), totalInstructions(numInstructions), remainingInstructions(numInstructions), processState(ProcessState::READY) {
     }
 
     // Execute one instruction of the process
     void executeInstruction() {
         if (remainingInstructions > 0) {
-            std::cout << "Executing instruction for Process " << id << ": " << name << "\n";
+            std::cout << "Core " << cpuCore << ": Executing instruction " <<
+                totalInstructions - remainingInstructions << "/" << totalInstructions <<
+                " for " << name << "\n";
+
+            commandList[totalInstructions - remainingInstructions]->execute();
+
             remainingInstructions--;
         }
         else {
@@ -42,8 +47,20 @@ public:
         return remainingInstructions == 0;
     }
 
+    int getId() const {
+        return id;
+    }
+
+    std::string getName() const {
+        return name;
+    }
+
+    int getCpuCore() const {
+        return cpuCore;
+    }
+
     void addCommand(CommandType commandType) {
-        switch (CommandType) {
+        switch (commandType) {
             case CommandType::PRINT:
                 commandList.push_back(std::make_shared<PrintCommand>(id));
                 break;
@@ -53,6 +70,14 @@ public:
         }
     }
 
+    void setState(ProcessState newState) {
+        processState = newState;
+    }
+
+    void setCpuCore(int newCoreId) {
+        this->cpuCore = newCoreId;
+    }
+
 private:
     std::string name;
     int id;
@@ -60,8 +85,10 @@ private:
     int remainingInstructions;
 
     std::vector<std::shared_ptr<ICommand>> commandList;
+    ProcessState processState;
 
-    int cpuCoreId = -1;
+    int cpuCore = -1;
+    
 
 
 };

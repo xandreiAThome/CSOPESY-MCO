@@ -2,6 +2,7 @@
 #include "parser.hpp"
 #include "terminal_utils.hpp"
 #include "globals.hpp"
+#include "scheduler/fcfsscheduler.hpp"
 #include <iostream>
 #include <memory>
 
@@ -83,12 +84,13 @@ void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_START) {
-    std::cout << "scheduler-start command recognized. Doing something.\n";
-    return;
+      FCFSScheduler::get().schedulerStart();
+      FCFSScheduler::get().runScheduler();
+      return;
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_STOP) {
-    std::cout << "scheduler-stop command recognized. Doing something.\n";
+      FCFSScheduler::get().schedulerStop();
     return;
   }
 
