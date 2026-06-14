@@ -9,7 +9,9 @@ add_executable(csopesy
   src/main.cpp
   src/parser.cpp
   src/terminal_utils.cpp
- "include/scheduler/process.hpp" "include/scheduler/process.cpp")
+  src/scheduler/fcfsscheduler.cpp
+  src/scheduler/process.cpp 
+  src/commands/print_command.cpp)
 
 target_compile_features(csopesy PRIVATE cxx_std_20)
 target_include_directories(csopesy PRIVATE include)

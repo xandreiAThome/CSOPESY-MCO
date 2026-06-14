@@ -1,16 +1,22 @@
 //a template for the process
 #include <iostream>
 #include <string>
-#include <cstdlib> // for rand() function
+#include <cstdlib> 
+#include <vector>
+#include <memory>
+#include "commands/icommand.hpp"
+#include "commands/print_command.hpp"
+
 
 class Process {
-private:
-    std::string name;
-    int id;
-    int totalInstructions;
-    int remainingInstructions;
-
 public:
+    enum ProcessState {
+        READY,
+        WAITING,
+        RUNNING,
+        FINISHED
+    };
+
     Process(const std::string& processName, int processId, int numInstructions)
         : name(processName), id(processId), totalInstructions(numInstructions), remainingInstructions(numInstructions) {
     }
@@ -35,18 +41,28 @@ public:
     bool hasFinished() const {
         return remainingInstructions == 0;
     }
-};
 
-int main() {
-    // Create a sample process
-    Process myProcess("SampleProcess", 1, 10);
-
-    // Execute instructions until the process finishes
-    while (!myProcess.hasFinished()) {
-        myProcess.executeInstruction();
+    void addCommand(CommandType commandType) {
+        switch (CommandType) {
+            case CommandType::PRINT:
+                commandList.push_back(std::make_shared<PrintCommand>(id));
+                break;
+            default:
+                std::cout << "Invalid command type.\n";
+                break;
+        }
     }
 
-    std::cout << "Process has finished!\n";
+private:
+    std::string name;
+    int id;
+    int totalInstructions;
+    int remainingInstructions;
 
-    return 0;
-}
+    std::vector<std::shared_ptr<ICommand>> commandList;
+
+    int cpuCoreId = -1;
+
+
+};
+
