@@ -11,7 +11,10 @@ add_executable(csopesy
   src/terminal_utils.cpp
   src/scheduler/fcfsscheduler.cpp
   src/scheduler/process.cpp 
-  src/commands/print_command.cpp "src/globals.cpp")
+  src/scheduler/core_worker.cpp
+  src/scheduler/ietthread.cpp
+  src/scheduler/global_scheduler.cpp
+  src/commands/print_command.cpp "src/globals.cpp" "src/scheduler/global_scheduler.cpp")
 
 target_compile_features(csopesy PRIVATE cxx_std_20)
 target_include_directories(csopesy PRIVATE include)

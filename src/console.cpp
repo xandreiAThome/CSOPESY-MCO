@@ -29,7 +29,7 @@ const char *Console::currentStateName() const {
 
 void Console::run() {
   while (true) {
-      std::cout << "CURRENT TICK: " << Globals::get().cpuCycles;
+     //  std::cout << "CURRENT TICK: " << Globals::get().cpuCycles;
     std::cout << "\nCurrent state: " << currentStateName() << '\n';
     std::cout << current_state->commandPrompt() << '\n';
     std::cout << "> ";

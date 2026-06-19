@@ -1,5 +1,5 @@
 #include "commands/print_command.hpp"
-#include "scheduler/fcfsscheduler.hpp"
+#include "scheduler/global_scheduler.hpp"
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -17,7 +17,7 @@ PrintCommand::PrintCommand(int pid): pid(pid) {
 }
 
 void PrintCommand::execute() {
-	int cpuCore = FCFSScheduler::get().getProcess(pid)->getCpuCore();
+	int cpuCore = GlobalScheduler::get().getProcess(pid)->getCpuCore();
 	std::string filename = std::to_string(pid) + "_out.txt";
 
 	bool fileExist = std::filesystem::exists(filename);
@@ -30,7 +30,7 @@ void PrintCommand::execute() {
 
 	// Write header if file is newly created
 	if (!fileExist) {
-		writeFile << FCFSScheduler::get().getProcess(pid)->getName() << '\n'
+		writeFile << GlobalScheduler::get().getProcess(pid)->getName() << '\n'
 			<< "Logs: \n\n";
 	}
 

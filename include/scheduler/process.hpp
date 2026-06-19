@@ -1,4 +1,5 @@
 //a template for the process
+#pragma once
 #include <iostream>
 #include <string>
 #include <cstdlib> 
@@ -24,22 +25,30 @@ public:
     // Execute one instruction of the process
     void executeInstruction() {
         if (remainingInstructions > 0) {
-            std::cout << "Core " << cpuCore << ": Executing instruction " <<
-                totalInstructions - remainingInstructions << "/" << totalInstructions <<
-                " for " << name << "\n";
+           // std::cout << "Core " << cpuCore << ": Executing instruction " <<
+             //   totalInstructions - remainingInstructions + 1 << "/" << totalInstructions <<
+               // " for " << name << "\n";
 
             commandList[totalInstructions - remainingInstructions]->execute();
 
             remainingInstructions--;
         }
         else {
-            std::cout << "Process " << id << ": " << name << " has already finished.\n";
+            //std::cout << "Process " << id << ": " << name << " has already finished.\n";
         }
     }
 
     // Get the remaining number of instructions
     int getRemainingInstructions() const {
         return remainingInstructions;
+    }
+
+    int getExecutedInstructions() const {
+        return totalInstructions - remainingInstructions;
+    }
+
+    int getTotalInstructions() const {
+        return totalInstructions;
     }
 
     // Check if the process has finished
@@ -78,6 +87,12 @@ public:
         this->cpuCore = newCoreId;
     }
 
+    void setArrivalTime(unsigned long long newTime) {
+        this->arrivalTime = newTime;
+    }
+
+
+
 private:
     std::string name;
     int id;
@@ -88,6 +103,8 @@ private:
     ProcessState processState;
 
     int cpuCore = -1;
+
+    unsigned long long arrivalTime;
     
 
 

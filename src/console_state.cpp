@@ -2,7 +2,8 @@
 #include "parser.hpp"
 #include "terminal_utils.hpp"
 #include "globals.hpp"
-#include "scheduler/fcfsscheduler.hpp"
+#include "scheduler/global_scheduler.hpp"
+#include "scheduler/process.hpp"
 #include <iostream>
 #include <memory>
 
@@ -58,6 +59,19 @@ void UninitializedState::handle(Console &console,
         std::cout << "Errors found in config.txt \n";
     }
   }
+
+  // start scheduler
+  GlobalScheduler::get().start();
+
+  // add 10 processes
+  for (int i = 0; i < 10; i++) {
+      std::shared_ptr<Process> newProcess = std::make_shared<Process>("process_" + std::to_string(i), i, 100);
+
+      for (int j = 0;  j< 100; j++) {
+          newProcess->addCommand(PRINT);
+      }
+      GlobalScheduler::get().addProcess(newProcess);
+  }
 }
 
 bool MainMenuState::accepts(const ParsedCommand &command) const {
@@ -73,6 +87,7 @@ bool MainMenuState::accepts(const ParsedCommand &command) const {
 void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   if (command.screenType == ScreenCommandType::LIST) {
     std::cout << "screen -ls command recognized. Doing something.\n";
+    GlobalScheduler::get().printProcessReport();
     return;
   }
 
@@ -84,13 +99,12 @@ void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_START) {
-      FCFSScheduler::get().schedulerStart();
-      FCFSScheduler::get().runScheduler();
+      std::cout << "scheduler-start recognized";
       return;
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_STOP) {
-      FCFSScheduler::get().schedulerStop();
+      std::cout << "scheduler-stop recognized";
     return;
   }
 
