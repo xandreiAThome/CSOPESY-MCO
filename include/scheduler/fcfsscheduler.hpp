@@ -35,6 +35,24 @@ public:
         return nextProcess;
     }
 
+    bool isQueueEmpty(int coreId) override {
+        if (coreId < 0 || coreId >= static_cast<int>(processQueues.size())) {
+            return true;
+        }
+
+        std::lock_guard<std::mutex> lock(queueMutexes[coreId]);
+        return processQueues[coreId].empty();
+    }
+
+    int getQueueSize(int coreId) override {
+        if (coreId < 0 || coreId >= static_cast<int>(processQueues.size())) {
+            return 0;
+        }
+
+        std::lock_guard<std::mutex> lock(queueMutexes[coreId]);
+        return static_cast<int>(processQueues[coreId].size());
+    }
+
     // sortProcesses()
 
 private:

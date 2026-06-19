@@ -23,6 +23,7 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
     // std::cout << "Core " << coreId + 1 << " running Process " << process->getId() << "\n";
 
     process->setState(Process::RUNNING);
+    GlobalScheduler::get().markRunning(process);
     process->setCpuCore(coreId);
     
 

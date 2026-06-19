@@ -6,6 +6,7 @@
 #include <queue>
 #include <unordered_map>
 #include <mutex>
+#include <map>
 
 #include "scheduler/process.hpp"
 #include "scheduler/ietthread.hpp"
@@ -50,7 +51,6 @@ public:
         
 
         scheduler->enqueue(process, assignedCore);
-        markRunning(process);
 
         // std::cout << "Added Process " << process->getId()       << " to Core " << assignedCore + 1 << " queue.\n";
     }
@@ -85,41 +85,39 @@ public:
         std::lock_guard<std::mutex> lock(mutex);
 
         runningProcesses.erase(process->getId());
-        finishedProcesses.push_back(process);
+        finishedProcesses[process->getId()] = process;
     }
 
     void printProcessReport() {
         std::lock_guard<std::mutex> lock(mutex);
 
-        std::cout << "CPU Utilization: " << "???\n";
-        std::cout << "Cores Used: " << "???\n";
-        std::cout << "Cores Available: " << "???\n";
+        printCpuStatus();
 
         std::cout << "-----------------------------\n";
         std::cout << "Running:\n";
 
-        if (!runningProcesses.empty()) {
-            for (const auto& pair : runningProcesses) {
-                printProcessInfo(pair.second);
-            }
+      
+        for (const auto& pair : runningProcesses) {
+            printProcessInfo(pair.second);
         }
+        
  
 
         std::cout << "\nFinished:\n";
 
-        if (!finishedProcesses.empty()) {
-            for (const auto& process : finishedProcesses) {
-                printProcessInfo(process);
-            }
+        for (const auto& pair : finishedProcesses) {
+            printProcessInfo(pair.second);
         }
 
     }
 
 
+
+
 private:
-    std::unordered_map<int, std::shared_ptr<Process>> runningProcesses;
-    std::vector<std::shared_ptr<Process>> finishedProcesses;
-    std::unordered_map<int, std::shared_ptr<Process>> processes; // All generated processes
+    std::map<int, std::shared_ptr<Process>> runningProcesses;
+    std::map<int, std::shared_ptr<Process>> finishedProcesses;
+    std::map<int, std::shared_ptr<Process>> processes;
 
     std::mutex mutex;
 
@@ -151,4 +149,43 @@ private:
             << process->getTotalInstructions()
             << "\n";
     }
+
+    void printCpuStatus() {
+        int coresUsed = 0;
+        int coresAvailable = 0;
+
+        for (int coreId = 0; coreId < numCores; coreId++) {
+            bool queueEmpty = scheduler->isQueueEmpty(coreId);
+
+            bool hasRunningProcess = false;
+
+            for (const auto& pair : runningProcesses) {
+                auto process = pair.second;
+
+                if (process->getCpuCore() == coreId) {
+                    hasRunningProcess = true;
+                    break;
+                }
+            }
+
+            if (queueEmpty && !hasRunningProcess) {
+                coresAvailable++;
+            }
+            else {
+                coresUsed++;
+            }
+        }
+
+        double cpuUtilization = 0.0;
+
+        if (numCores > 0) {
+            cpuUtilization = (static_cast<double>(coresUsed) / numCores) * 100.0;
+        }
+
+        std::cout << "CPU Status:\n";
+        std::cout << "Cores Available: " << coresAvailable << "\n";
+        std::cout << "Cores Used: " << coresUsed << "\n";
+        std::cout << "CPU Utilization: " << cpuUtilization << "%\n";
+    }
+
 };
