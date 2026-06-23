@@ -12,6 +12,7 @@
 #include "scheduler/ietthread.hpp"
 #include "scheduler/fcfsscheduler.hpp"
 #include "scheduler/core_worker.hpp"
+#include "scheduler/process_cache.hpp"
 #include "globals.hpp"
 
 class GlobalScheduler {
@@ -36,12 +37,13 @@ public:
         }
     }
 
+
     void addProcess(std::shared_ptr<Process> process) {
         int assignedCore;
 
         {
             std::lock_guard<std::mutex> lock(mutex);
-            processes[process->getId()] = process;
+           // processes[process->getId()] = process;
 
             assignedCore = nextCore;          
             nextCore = (nextCore + 1) % numCores;
@@ -55,6 +57,7 @@ public:
         // std::cout << "Added Process " << process->getId()       << " to Core " << assignedCore + 1 << " queue.\n";
     }
 
+    /*
     std::shared_ptr<Process> getProcess(int pid) { 
         std::lock_guard<std::mutex> lock(mutex); 
         auto it = processes.find(pid); 
@@ -64,6 +67,7 @@ public:
         
         return it->second; 
     }
+    */
 
     std::shared_ptr<Process> getNextProcess(int coreId) {
         auto process = scheduler->getNextProcess(coreId);
@@ -84,8 +88,19 @@ public:
     void markFinished(std::shared_ptr<Process> process) {
         std::lock_guard<std::mutex> lock(mutex);
 
-        runningProcesses.erase(process->getId());
-        finishedProcesses[process->getId()] = process;
+        int pid = process->getId();
+
+        ProcessCache info;
+        info.pid = pid;
+        info.name = process->getName();
+        info.coreId = process->getCpuCore();
+        info.executedInstructions = process->getExecutedInstructions();
+        info.totalInstructions = process->getTotalInstructions();
+        info.logs = process->getLogs();
+
+        runningProcesses.erase(pid);
+
+        finishedProcessCache[pid] = info;
     }
 
     void printProcessReport() {
@@ -105,8 +120,8 @@ public:
 
         std::cout << "\nFinished:\n";
 
-        for (const auto& pair : finishedProcesses) {
-            printProcessInfo(pair.second);
+        for (const auto& pair : finishedProcessCache) {
+            printFinishedProcessInfo(pair.second);
         }
 
     }
@@ -116,8 +131,8 @@ public:
 
 private:
     std::map<int, std::shared_ptr<Process>> runningProcesses;
-    std::map<int, std::shared_ptr<Process>> finishedProcesses;
-    std::map<int, std::shared_ptr<Process>> processes;
+    std::map<int, ProcessCache> finishedProcessCache;
+    //std::map<int, std::shared_ptr<Process>> processes;
 
     std::mutex mutex;
 
@@ -186,6 +201,16 @@ private:
         std::cout << "Cores Available: " << coresAvailable << "\n";
         std::cout << "Cores Used: " << coresUsed << "\n";
         std::cout << "CPU Utilization: " << cpuUtilization << "%\n";
+    }
+
+    void printFinishedProcessInfo(const ProcessCache& process) {
+        std::cout << "Name: " << process.name
+            << " | Core: Finished"
+            << " | "
+            << process.executedInstructions
+            << " / "
+            << process.totalInstructions
+            << "\n";
     }
 
 };
