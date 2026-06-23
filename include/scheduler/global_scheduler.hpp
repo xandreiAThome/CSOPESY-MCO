@@ -47,54 +47,94 @@ public:
         generateProcesses.store(enable);
     }
 
+
     void addProcess(std::shared_ptr<Process> process) {
         int assignedCore;
 
+        process->setArrivalTime(Globals::get().cpuCycles);
+
         {
             std::lock_guard<std::mutex> lock(mutex);
-           // processes[process->getId()] = process;
 
-            
-            assignedCore = nextCore;          
+            const std::string name = process->getName();
+
+            if (processExistsNoLock(name)) {
+                return;
+            }
+
+            readyProcesses[name] = process;
+
+            assignedCore = nextCore;
             nextCore = (nextCore + 1) % numCores;
         }
 
-        process->setArrivalTime(Globals::get().cpuCycles);
         scheduler->enqueue(process, assignedCore);
     }
 
-    /*
-    std::shared_ptr<Process> getProcess(int pid) { 
-        std::lock_guard<std::mutex> lock(mutex); 
-        auto it = processes.find(pid); 
-        if (it == processes.end()) { 
-            return nullptr; 
-        } 
-        return it->second; 
+    
+    bool getProcessCache(const std::string& name, ProcessCache& outCache) {
+        std::lock_guard<std::mutex> lock(mutex);
+
+        auto readyIt = readyProcesses.find(name);
+        if (readyIt != readyProcesses.end()) {
+            outCache = createCacheFromProcess(readyIt->second);
+            return true;
+        }
+
+        auto waitingIt = waitingProcesses.find(name);
+        if (waitingIt != waitingProcesses.end()) {
+            outCache = createCacheFromProcess(waitingIt->second);
+            return true;
+        }
+
+        auto runningIt = runningProcesses.find(name);
+        if (runningIt != runningProcesses.end()) {
+            outCache = createCacheFromProcess(runningIt->second);
+            return true;
+        }
+
+        auto finishedIt = finishedProcessCache.find(name);
+        if (finishedIt != finishedProcessCache.end()) {
+            outCache = finishedIt->second;
+            return true;
+        }
+
+        return false;
     }
-    */
+    void markWaiting(std::shared_ptr<Process> process) {
+        std::lock_guard<std::mutex> lock(mutex);
+
+        std::string name = process->getName();
+
+        readyProcesses.erase(name);
+        runningProcesses.erase(name);
+
+        waitingProcesses[name] = process;
+    }
 
     void markRunning(std::shared_ptr<Process> process) {
         std::lock_guard<std::mutex> lock(mutex);
-        runningProcesses[process->getId()] = process;
+
+        std::string name = process->getName();
+
+        readyProcesses.erase(name);
+        waitingProcesses.erase(name);
+
+        runningProcesses[name] = process;
     }
 
     void markFinished(std::shared_ptr<Process> process) {
         std::lock_guard<std::mutex> lock(mutex);
 
-        int pid = process->getId();
+        std::string name = process->getName();
 
-        ProcessCache info;
-        info.pid = pid;
-        info.name = process->getName();
-        info.coreId = process->getCpuCore();
-        info.executedInstructions = process->getExecutedInstructions();
-        info.totalInstructions = process->getTotalInstructions();
-        info.logs = process->getLogs();
+        ProcessCache info = createCacheFromProcess(process);
 
-        runningProcesses.erase(pid);
+        readyProcesses.erase(name);
+        waitingProcesses.erase(name);
+        runningProcesses.erase(name);
 
-        finishedProcessCache[pid] = info;
+        finishedProcessCache[name] = info;
     }
 
     void printProcessReport() {
@@ -115,10 +155,39 @@ public:
         }
     }
 
+    bool processExists(const std::string& pName) {
+        std::lock_guard<std::mutex> lock(mutex);
+        return processExistsNoLock(pName);
+    }
+
+    // Manual creation (screen -s)
+    void createProcess(const std::string& name) {
+        if (processExists(name)) {
+            return;
+        }
+
+        int newPid = generatePid();
+
+        int minIns = Globals::get().minIns;
+        int maxIns = Globals::get().maxIns;
+        int insCount = minIns + (std::rand() % (maxIns - minIns + 1));
+
+        auto newProcess = ProcessFactory::createProcess(
+            name,
+            newPid,
+            insCount
+        );
+
+        addProcess(newProcess);
+    }
+
+
 private:
-    std::map<int, std::shared_ptr<Process>> runningProcesses;
-    std::map<int, ProcessCache> finishedProcessCache;
-    //std::map<int, std::shared_ptr<Process>> processes;
+    std::map<std::string, std::shared_ptr<Process>> readyProcesses;
+    std::map<std::string, std::shared_ptr<Process>> waitingProcesses;
+    std::map<std::string, std::shared_ptr<Process>> runningProcesses;
+    std::map<std::string, ProcessCache> finishedProcessCache;
+    //std::map<int, ProcessCache> processes;
 
     std::mutex mutex;
 
@@ -129,10 +198,11 @@ private:
     int nextCore = 0;
     
     std::atomic<bool> generateProcesses{false};
-    unsigned long long lastGenerationTick = 0;
-    int generatedProcessCount = 0;
+    
+    std::atomic<int> generatedProcessCount{ 0 };
 
     void run() override {
+        unsigned long long lastGenerationTick = 0;
         while (true) {
             // process generation
             if (generateProcesses.load()) {
@@ -140,18 +210,25 @@ private:
                 unsigned long long freq = Globals::get().batchProcessFreq;
 
                 if (currentTick - lastGenerationTick >= freq) {
-                    generatedProcessCount++;
-                    
-                    
-                    std::string name = std::string("p") + (generatedProcessCount < 10 ? "0" : "") + std::to_string(generatedProcessCount);
-                    
+                    int newPid = generatePid();
+
+                    std::string name =
+                        std::string("process_") +
+                        (newPid < 10 ? "0" : "") +
+                        std::to_string(newPid);
+
                     int minIns = Globals::get().minIns;
                     int maxIns = Globals::get().maxIns;
                     int insCount = minIns + (std::rand() % (maxIns - minIns + 1));
 
-                    auto newProcess = ProcessFactory::createProcess(name, generatedProcessCount, insCount);
+                    auto newProcess = ProcessFactory::createProcess(
+                        name,
+                        newPid,
+                        insCount
+                    );
+
                     addProcess(newProcess);
-                    
+
                     lastGenerationTick = currentTick;
                 }
             }
@@ -205,5 +282,38 @@ private:
         std::cout << "Cores Available: " << coresAvailable << "\n";
         std::cout << "Cores Used: " << coresUsed << "\n";
         std::cout << "CPU Utilization: " << cpuUtilization << "%\n";
+    }
+
+    void printFinishedProcessInfo(const ProcessCache& process) {
+        std::cout << "Name: " << process.name
+            << " | Core: Finished"
+            << " | "
+            << process.executedInstructions
+            << " / "
+            << process.totalInstructions
+            << "\n";
+    }
+
+    ProcessCache createCacheFromProcess(const std::shared_ptr<Process>& process) {
+        ProcessCache info;
+        info.pid = process->getId();
+        info.name = process->getName();
+        info.coreId = process->getCpuCore();
+        info.executedInstructions = process->getExecutedInstructions();
+        info.totalInstructions = process->getTotalInstructions();
+        info.logs = process->getLogs();
+
+        return info;
+    }
+
+    bool processExistsNoLock(const std::string& pName) {
+        return readyProcesses.find(pName) != readyProcesses.end()
+            || waitingProcesses.find(pName) != waitingProcesses.end()
+            || runningProcesses.find(pName) != runningProcesses.end()
+            || finishedProcessCache.find(pName) != finishedProcessCache.end();
+    }
+
+    int generatePid() {
+        return generatedProcessCount.fetch_add(1) + 1;
     }
 };
