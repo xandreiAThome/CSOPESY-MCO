@@ -146,10 +146,6 @@ void ProcessScreenState::handle(Console &console, const ParsedCommand &command) 
 
       std::cout << "Process name: " << process->getName() << "\n";
       std::cout << "ID: " << process->getId() << "\n\n";
-      
-      if (process->hasFinished()) {
-          std::cout << "Finished!\n\n";
-      }
 
       std::cout << "Logs:\n";
       for (const auto& log : process->getLogs()) {
@@ -158,6 +154,10 @@ void ProcessScreenState::handle(Console &console, const ParsedCommand &command) 
 
       std::cout << "\nCurrent instruction line: " << process->getExecutedInstructions() << "\n";
       std::cout << "Lines of code: " << process->getTotalInstructions() << "\n";
+
+      if (process->hasFinished()) {
+          std::cout << "Finished!\n\n";
+      }
       
       return;
   }
