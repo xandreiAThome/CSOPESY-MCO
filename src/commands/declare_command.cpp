@@ -8,4 +8,9 @@ DeclareCommand::DeclareCommand(const std::string& varName, uint16_t value)
 
 void DeclareCommand::execute(Process& process) {
     process.setVariable(varName, value);
+
+    process.addLog(
+        varName + " is declared as " + std::to_string(value)
+    );
+
 }

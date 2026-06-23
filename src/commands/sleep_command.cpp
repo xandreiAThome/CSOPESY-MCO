@@ -6,5 +6,6 @@ SleepCommand::SleepCommand(uint8_t ticks)
 }
 
 void SleepCommand::execute(Process& process) {
+    process.addLog("Slept for " + std::to_string(ticks) + " ticks");
     process.sleep(ticks);
 }
