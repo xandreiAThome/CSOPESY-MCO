@@ -18,4 +18,11 @@ void SubtractCommand::execute(Process& process) {
     }
 
     process.setVariable(destinationVariable, static_cast<uint16_t>(result));
+
+    process.addLog(
+        destinationVariable + " = " +
+        leftOperand.toLogString(process) + " - " +
+        rightOperand.toLogString(process) + " is performed. " +
+        destinationVariable + " is now " + std::to_string(result)
+    );
 }

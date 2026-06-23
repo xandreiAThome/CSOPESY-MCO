@@ -11,6 +11,7 @@ public:
     static Operand value(uint16_t literalValue);
 
     uint16_t resolve(Process& process) const;
+    std::string toLogString(Process& process) const;
 
 private:
     Operand(bool isVariable, const std::string& variableName, uint16_t literalValue);

@@ -22,3 +22,12 @@ uint16_t Operand::resolve(Process& process) const {
 
     return literalValue;
 }
+
+std::string Operand::toLogString(Process& process) const {
+    if (isVariable) {
+        uint16_t value = process.getVariable(variableName);
+        return variableName + " (" + std::to_string(value) + ")";
+    }
+
+    return std::to_string(literalValue);
+}
