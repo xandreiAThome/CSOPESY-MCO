@@ -10,6 +10,8 @@
 #include <atomic>
 #include <thread>
 #include <string>
+#include <fstream>
+#include <sstream>
 
 #include "scheduler/process.hpp"
 #include "scheduler/ietthread.hpp"
@@ -41,6 +43,8 @@ public:
         }
         IETThread::start(); 
     }
+
+
 
 
     void toggleProcessGeneration(bool enable) {
@@ -137,22 +141,48 @@ public:
         finishedProcessCache[name] = info;
     }
 
-    void printProcessReport() {
+    std::string buildProcessReport() {
         std::lock_guard<std::mutex> lock(mutex);
 
-        printCpuStatus();
+        std::ostringstream out;
 
-        std::cout << "-----------------------------\n";
-        std::cout << "Running:\n";
+        writeCpuStatus(out);
+
+        out << "-----------------------------\n";
+        out << "Running:\n";
+
         for (const auto& pair : runningProcesses) {
-            printProcessInfo(pair.second);
+            writeProcessInfo(out, pair.second);
         }
-        
-        std::cout << "\nFinished:\n";
+
+        out << "\nFinished:\n";
 
         for (const auto& pair : finishedProcessCache) {
-            printFinishedProcessInfo(pair.second);
+            writeFinishedProcessInfo(out, pair.second);
         }
+
+        return out.str();
+    }
+
+    void printProcessReport() {
+        std::cout << buildProcessReport();
+    }
+
+    void writeProcessReportToFile() {
+        std::string filename = "csopesy-log.txt";
+
+        std::ofstream file(filename);
+
+        if (!file.is_open()) {
+            std::cout << "Failed to open report file: " << filename << "\n";
+            return;
+        }
+
+        file << buildProcessReport();
+
+        file.close();
+
+        std::cout << "Report generated at /csopesy-log.txt!\n";
     }
 
     bool processExists(const std::string& pName) {
@@ -203,7 +233,7 @@ private:
 
     void run() override {
         unsigned long long lastGenerationTick = 0;
-        while (true) {
+        while (Globals::get().running) {
             // process generation
             if (generateProcesses.load()) {
                 unsigned long long currentTick = Globals::get().cpuCycles.load();
@@ -249,20 +279,29 @@ private:
         }
     }
 
-    void printProcessInfo(const std::shared_ptr<Process>& process) {
+    void writeProcessInfo(std::ostream& out, const std::shared_ptr<Process>& process) {
         int coreId = process->getCpuCore();
 
-        std::cout << "Name: " << process->getName() << " | Core: ";
+        out << "Name: " << process->getName() << " | Core: ";
 
-        if (coreId == -1) std::cout << "N/A";
-        else if (coreId == -2) std::cout << "Finished";
-        else std::cout << coreId;
+        if (coreId == -1) {
+            out << "N/A";
+        }
+        else if (coreId == -2) {
+            out << "Finished";
+        }
+        else {
+            out << coreId;
+        }
 
-        std::cout << " | " << process->getExecutedInstructions()
-                  << " / " << process->getTotalInstructions() << "\n";
+        out << " | "
+            << process->getExecutedInstructions()
+            << " / "
+            << process->getTotalInstructions()
+            << "\n";
     }
 
-    void printCpuStatus() {
+    void writeCpuStatus(std::ostream& out) {
         int coresUsed = 0;
 
         for (const auto& worker : workers) {
@@ -270,7 +309,7 @@ private:
                 coresUsed++;
             }
         }
-        
+
         int coresAvailable = numCores - coresUsed;
         double cpuUtilization = 0.0;
 
@@ -278,14 +317,14 @@ private:
             cpuUtilization = (static_cast<double>(coresUsed) / numCores) * 100.0;
         }
 
-        std::cout << "CPU Status:\n";
-        std::cout << "Cores Available: " << coresAvailable << "\n";
-        std::cout << "Cores Used: " << coresUsed << "\n";
-        std::cout << "CPU Utilization: " << cpuUtilization << "%\n";
+        out << "CPU Status:\n";
+        out << "Cores Available: " << coresAvailable << "\n";
+        out << "Cores Used: " << coresUsed << "\n";
+        out << "CPU Utilization: " << cpuUtilization << "%\n";
     }
 
-    void printFinishedProcessInfo(const ProcessCache& process) {
-        std::cout << "Name: " << process.name
+    void writeFinishedProcessInfo(std::ostream& out, const ProcessCache& process) {
+        out << "Name: " << process.name
             << " | Core: Finished"
             << " | "
             << process.executedInstructions

@@ -1,6 +1,7 @@
 #include "scheduler/core_worker.hpp"
 #include "scheduler/process.hpp"
 #include "scheduler/global_scheduler.hpp"
+#include "globals.hpp"
 #include <memory>
 #include <thread>
 
@@ -8,7 +9,7 @@ CoreWorker::CoreWorker(int coreId) : coreId(coreId), isRunning(false) {}
 
 void CoreWorker::run() {
     isRunning.store(true);
-    while (isRunning.load()) {
+    while (isRunning.load() && Globals::get().running) {
         // wait idly until the dispatcher assigns a process
         if (currentProcess == nullptr) {
             std::this_thread::yield(); 
@@ -29,7 +30,7 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
     
     int delay = Globals::get().delayPerExec;
 
-    while (!process->hasFinished() && isRunning.load()) {
+    while (!process->hasFinished() && isRunning.load() && Globals::get().running) {
         process->executeInstruction();
 
         if (delay > 0) {

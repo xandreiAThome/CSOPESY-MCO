@@ -110,6 +110,8 @@ void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   }
 
 
+
+
 if (command.type == ConsoleCommandType::SCHEDULER_START) {
       GlobalScheduler::get().toggleProcessGeneration(true);
       std::cout << "Process generation started.\n";
@@ -123,7 +125,7 @@ if (command.type == ConsoleCommandType::SCHEDULER_START) {
   }
 
   if (command.type == ConsoleCommandType::REPORT_UTIL) {
-    std::cout << "report-util command recognized. Doing something.\n";
+    GlobalScheduler::get().writeProcessReportToFile();
     return;
   }
 }

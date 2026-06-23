@@ -52,6 +52,8 @@ void Console::run() {
         continue;
       }
 
+      Globals::get().running = 0;
+      std::cout << "Shutting down...\n";
       return;
     }
 
