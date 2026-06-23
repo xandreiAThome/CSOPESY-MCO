@@ -4,6 +4,7 @@
 #include "globals.hpp"
 #include "scheduler/global_scheduler.hpp"
 #include "scheduler/process.hpp"
+#include "commands/print_command.hpp"
 #include <iostream>
 #include <memory>
 
@@ -68,7 +69,7 @@ void UninitializedState::handle(Console &console,
       std::shared_ptr<Process> newProcess = std::make_shared<Process>("process_" + std::to_string(i), i, 100);
 
       for (int j = 0;  j< 100; j++) {
-          newProcess->addCommand(PRINT);
+          newProcess->addCommand(std::make_shared<PrintCommand>());
       }
       GlobalScheduler::get().addProcess(newProcess);
   }

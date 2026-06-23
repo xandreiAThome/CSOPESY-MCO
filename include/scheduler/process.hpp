@@ -93,15 +93,10 @@ public:
     }
 
 
-    void addCommand(CommandType commandType) {
-        switch (commandType) {
-            case CommandType::PRINT:
-                commandList.push_back(std::make_shared<PrintCommand>(id));
-                break;
-            default:
-                std::cout << "Invalid command type.\n";
-                break;
-        }
+    // Accepts commands from process_factory
+    void addCommand(std::shared_ptr<ICommand> command) {
+        commandList.push_back(command);
+        totalInstructions = commandList.size(); 
     }
 
     void setState(ProcessState newState) {
@@ -157,7 +152,7 @@ private:
 
     std::vector<std::string> logs;  // for process-smi
 
-    unsigned long long wakeUpTick = -1 // if asleep
+    unsigned long long wakeUpTick = -1; // if asleep
     
 };
 

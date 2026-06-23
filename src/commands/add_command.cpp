@@ -1,6 +1,7 @@
 #include "commands/add_command.hpp"
-#include "process.hpp"
+#include "scheduler/process.hpp"
 #include <limits>
+#include <cstdint>
 
 AddCommand::AddCommand(
     const std::string& destinationVariable,

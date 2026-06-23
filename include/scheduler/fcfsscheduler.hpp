@@ -17,7 +17,7 @@ public:
       //   std::cout << "FCFSScheduler created with " << cores << " cores\n";
     }
 
-    void enqueue(std::shared_ptr<Process> process, int coreId)  {
+    void enqueue(std::shared_ptr<Process> process, int coreId) override {
         std::lock_guard<std::mutex> lock(queueMutexes[coreId]);
         processQueues[coreId].push(process);
     }

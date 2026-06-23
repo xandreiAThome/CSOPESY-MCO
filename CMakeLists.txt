@@ -4,9 +4,10 @@ project(csopesy LANGUAGES CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(csopesy
+  src/main.cpp
+  src/globals.cpp
   src/console.cpp
   src/console_state.cpp
-  src/main.cpp
   src/parser.cpp
   src/terminal_utils.cpp
   src/scheduler/fcfsscheduler.cpp
@@ -14,7 +15,14 @@ add_executable(csopesy
   src/scheduler/core_worker.cpp
   src/scheduler/ietthread.cpp
   src/scheduler/global_scheduler.cpp
-  src/commands/print_command.cpp "src/globals.cpp" "src/scheduler/global_scheduler.cpp" "src/commands/declare_command.cpp" "src/commands/operand.cpp" "src/commands/subtract_command.cpp" "src/commands/sleep_command.cpp" "src/scheduler/process_factory.cpp")
+  src/scheduler/process_factory.cpp
+  src/commands/print_command.cpp
+  src/commands/declare_command.cpp
+  src/commands/operand.cpp
+  src/commands/add_command.cpp
+  src/commands/subtract_command.cpp
+  src/commands/sleep_command.cpp
+)
 
 target_compile_features(csopesy PRIVATE cxx_std_20)
 target_include_directories(csopesy PRIVATE include)

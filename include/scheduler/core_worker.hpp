@@ -8,6 +8,7 @@
 class CoreWorker : public IETThread {
 public:
     CoreWorker(int coreId);
+    virtual ~CoreWorker() = default;
 private:
 	int coreId;
 	std::atomic<bool> isRunning;

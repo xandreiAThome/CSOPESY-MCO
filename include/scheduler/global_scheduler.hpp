@@ -17,8 +17,8 @@
 class GlobalScheduler {
 public:
     GlobalScheduler(int cores)
-        : numCores(cores),
-        scheduler(std::make_unique<FCFSScheduler>(cores))
+        : scheduler(std::make_unique<FCFSScheduler>(cores)),
+        numCores(cores)
     {
         for (int i = 0; i < numCores; i++) {
             workers.push_back(std::make_unique<CoreWorker>(i));
