@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 class Console;
 struct ParsedCommand;
 
@@ -36,10 +38,21 @@ public:
 
 class ProcessScreenState : public ConsoleBaseState {
 public:
+  ProcessScreenState(const std::string& processName) 
+      : attachedProcessName(processName) {
+      customPrompt = "Choose command for " + processName + " (process-smi, clear, exit):";
+      customState = "Attached to Screen: " + processName;
+  }
+
   void handle(Console &console, const ParsedCommand &command) override;
   bool accepts(const ParsedCommand &command) const override;
-  const char *commandPrompt() const override;
+  
+  const char *commandPrompt() const override { return customPrompt.c_str(); }
   const char *invalidCommandMessage() const override;
+  const char *current_state() const override { return customState.c_str(); }
 
-  const char *current_state() const override { return "Cli process screen"; }
+private:
+  std::string attachedProcessName; 
+  std::string customPrompt;
+  std::string customState;
 };

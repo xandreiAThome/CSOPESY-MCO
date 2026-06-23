@@ -7,14 +7,18 @@
 #include <unordered_map>
 #include <mutex>
 #include <map>
+#include <atomic>
+#include <thread>
+#include <string>
 
 #include "scheduler/process.hpp"
 #include "scheduler/ietthread.hpp"
 #include "scheduler/fcfsscheduler.hpp"
 #include "scheduler/core_worker.hpp"
+#include "scheduler/process_factory.hpp"
 #include "globals.hpp"
 
-class GlobalScheduler {
+class GlobalScheduler : public IETThread {
 public:
     GlobalScheduler(int cores)
         : scheduler(std::make_unique<FCFSScheduler>(cores)),
@@ -34,6 +38,11 @@ public:
         for (auto& worker : workers) {
             worker->start();
         }
+        IETThread::start(); 
+    }
+
+    void toggleProcessGeneration(bool enable) {
+        generateProcesses.store(enable);
     }
 
     void addProcess(std::shared_ptr<Process> process) {
@@ -43,16 +52,13 @@ public:
             std::lock_guard<std::mutex> lock(mutex);
             processes[process->getId()] = process;
 
+            
             assignedCore = nextCore;          
             nextCore = (nextCore + 1) % numCores;
         }
 
         process->setArrivalTime(Globals::get().cpuCycles);
-        
-
         scheduler->enqueue(process, assignedCore);
-
-        // std::cout << "Added Process " << process->getId()       << " to Core " << assignedCore + 1 << " queue.\n";
     }
 
     std::shared_ptr<Process> getProcess(int pid) { 
@@ -61,29 +67,16 @@ public:
         if (it == processes.end()) { 
             return nullptr; 
         } 
-        
         return it->second; 
-    }
-
-    std::shared_ptr<Process> getNextProcess(int coreId) {
-        auto process = scheduler->getNextProcess(coreId);
-
-        if (process != nullptr) {
-            markRunning(process);
-        }
-
-        return process;
     }
 
     void markRunning(std::shared_ptr<Process> process) {
         std::lock_guard<std::mutex> lock(mutex);
-
         runningProcesses[process->getId()] = process;
     }
 
     void markFinished(std::shared_ptr<Process> process) {
         std::lock_guard<std::mutex> lock(mutex);
-
         runningProcesses.erase(process->getId());
         finishedProcesses[process->getId()] = process;
     }
@@ -95,24 +88,15 @@ public:
 
         std::cout << "-----------------------------\n";
         std::cout << "Running:\n";
-
-      
         for (const auto& pair : runningProcesses) {
             printProcessInfo(pair.second);
         }
         
- 
-
         std::cout << "\nFinished:\n";
-
         for (const auto& pair : finishedProcesses) {
             printProcessInfo(pair.second);
         }
-
     }
-
-
-
 
 private:
     std::map<int, std::shared_ptr<Process>> runningProcesses;
@@ -126,56 +110,74 @@ private:
 
     int numCores;
     int nextCore = 0;
+    
+    std::atomic<bool> generateProcesses{false};
+    unsigned long long lastGenerationTick = 0;
+    int generatedProcessCount = 0;
+
+    void run() override {
+        while (true) {
+            // process generation
+            if (generateProcesses.load()) {
+                unsigned long long currentTick = Globals::get().cpuCycles.load();
+                unsigned long long freq = Globals::get().batchProcessFreq;
+
+                if (currentTick - lastGenerationTick >= freq) {
+                    generatedProcessCount++;
+                    
+                    
+                    std::string name = std::string("p") + (generatedProcessCount < 10 ? "0" : "") + std::to_string(generatedProcessCount);
+                    
+                    int minIns = Globals::get().minIns;
+                    int maxIns = Globals::get().maxIns;
+                    int insCount = minIns + (std::rand() % (maxIns - minIns + 1));
+
+                    auto newProcess = ProcessFactory::createProcess(name, generatedProcessCount, insCount);
+                    addProcess(newProcess);
+                    
+                    lastGenerationTick = currentTick;
+                }
+            }
+
+            // dispatcher
+            for (int i = 0; i < numCores; i++) {
+                if (!scheduler->isQueueEmpty(i)) {
+                    if (workers[i]->isIdle()) {
+                        auto process = scheduler->getNextProcess(i);
+                        if (process != nullptr) {
+                            workers[i]->assignProcess(process);
+                        }
+                    }
+                }
+            }
+
+            std::this_thread::yield(); 
+        }
+    }
 
     void printProcessInfo(const std::shared_ptr<Process>& process) {
         int coreId = process->getCpuCore();
 
-        std::cout << "Name: " << process->getName()
-            << " | Core: ";
+        std::cout << "Name: " << process->getName() << " | Core: ";
 
-        if (coreId == -1) {
-            std::cout << "N/A";
-        }
-        else if (coreId == -2) {
-            std::cout << "Finished";
-        }
-        else {
-            std::cout << coreId;
-        }
+        if (coreId == -1) std::cout << "N/A";
+        else if (coreId == -2) std::cout << "Finished";
+        else std::cout << coreId;
 
-        std::cout << " | "
-            << process->getExecutedInstructions()
-            << " / "
-            << process->getTotalInstructions()
-            << "\n";
+        std::cout << " | " << process->getExecutedInstructions()
+                  << " / " << process->getTotalInstructions() << "\n";
     }
 
     void printCpuStatus() {
         int coresUsed = 0;
-        int coresAvailable = 0;
 
-        for (int coreId = 0; coreId < numCores; coreId++) {
-            bool queueEmpty = scheduler->isQueueEmpty(coreId);
-
-            bool hasRunningProcess = false;
-
-            for (const auto& pair : runningProcesses) {
-                auto process = pair.second;
-
-                if (process->getCpuCore() == coreId) {
-                    hasRunningProcess = true;
-                    break;
-                }
-            }
-
-            if (queueEmpty && !hasRunningProcess) {
-                coresAvailable++;
-            }
-            else {
+        for (const auto& worker : workers) {
+            if (!worker->isIdle()) {
                 coresUsed++;
             }
         }
-
+        
+        int coresAvailable = numCores - coresUsed;
         double cpuUtilization = 0.0;
 
         if (numCores > 0) {
@@ -187,5 +189,4 @@ private:
         std::cout << "Cores Used: " << coresUsed << "\n";
         std::cout << "CPU Utilization: " << cpuUtilization << "%\n";
     }
-
 };

@@ -2,32 +2,31 @@
 #include "scheduler/process.hpp"
 #include "scheduler/global_scheduler.hpp"
 #include <memory>
+#include <thread>
 
 CoreWorker::CoreWorker(int coreId) : coreId(coreId), isRunning(false) {}
 
 void CoreWorker::run() {
     isRunning.store(true);
     while (isRunning.load()) {
-        std::shared_ptr<Process> process = GlobalScheduler::get().getNextProcess(coreId);
-
-        if (process == nullptr) {
-            sleep(1);
+        // wait idly until the dispatcher assigns a process
+        if (currentProcess == nullptr) {
+            std::this_thread::yield(); 
             continue;
         }
 
-        executeProcess(process);
+        executeProcess(currentProcess);
+        
+        // clear the current process so the dispatcher knows we are idle after finishing
+        currentProcess = nullptr;
     }
 }
 
 void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
-    // std::cout << "Core " << coreId + 1 << " running Process " << process->getId() << "\n";
-
     process->setState(Process::RUNNING);
     GlobalScheduler::get().markRunning(process);
     process->setCpuCore(coreId);
     
-
-
     int delay = Globals::get().delayPerExec;
 
     while (!process->hasFinished() && isRunning.load()) {
@@ -43,7 +42,5 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
         process->setCpuCore(-2);
 
         GlobalScheduler::get().markFinished(process);
-
-        // std::cout << "Core " << coreId + 1 << " completed Process  << process->getId() << "\n";
     }
 }

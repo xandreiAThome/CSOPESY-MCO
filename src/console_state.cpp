@@ -25,9 +25,9 @@ const char *MainMenuState::invalidCommandMessage() const {
   return "Unknown command. Try again.";
 }
 
-const char *ProcessScreenState::commandPrompt() const {
-  return "Choose command (process-smi, clear, exit):";
-}
+// const char *ProcessScreenState::commandPrompt() const {
+//   return "Choose command (process-smi, clear, exit):";
+// }
 
 const char *ProcessScreenState::invalidCommandMessage() const {
   return "Unknown command. Try again.";
@@ -94,18 +94,20 @@ void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   if (command.screenType == ScreenCommandType::CREATE ||
       command.screenType == ScreenCommandType::RESUME) {
     clearTerminal();
-    console.setState(std::make_unique<ProcessScreenState>());
+    console.setState(std::make_unique<ProcessScreenState>(command.target));
     return;
   }
 
-  if (command.type == ConsoleCommandType::SCHEDULER_START) {
-      std::cout << "scheduler-start recognized";
+if (command.type == ConsoleCommandType::SCHEDULER_START) {
+      GlobalScheduler::get().toggleProcessGeneration(true);
+      std::cout << "Process generation started.\n";
       return;
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_STOP) {
-      std::cout << "scheduler-stop recognized";
-    return;
+      GlobalScheduler::get().toggleProcessGeneration(false);
+      std::cout << "Process generation stopped.\n";
+      return;
   }
 
   if (command.type == ConsoleCommandType::REPORT_UTIL) {
@@ -119,8 +121,7 @@ bool ProcessScreenState::accepts(const ParsedCommand &command) const {
          command.type == ConsoleCommandType::PROCESS_SMI;
 }
 
-void ProcessScreenState::handle(Console &console,
-                                const ParsedCommand &command) {
+void ProcessScreenState::handle(Console &console, const ParsedCommand &command) {
   if (command.type == ConsoleCommandType::EXIT) {
     clearTerminal();
     console.setState(std::make_unique<MainMenuState>());
@@ -128,7 +129,36 @@ void ProcessScreenState::handle(Console &console,
   }
 
   if (command.type == ConsoleCommandType::PROCESS_SMI) {
-    std::cout << "process-smi command recognized. Doing something.\n";
-    return;
+      int pid = -1;
+      try {
+          pid = std::stoi(attachedProcessName.substr(1)); 
+      } catch (...) {
+          std::cout << "Error parsing process ID from name: " << attachedProcessName << "\n";
+          return;
+      }
+      
+      auto process = GlobalScheduler::get().getProcess(pid);
+
+      if (process == nullptr) {
+          std::cout << "Process " << attachedProcessName << " not found.\n";
+          return;
+      }
+
+      std::cout << "Process name: " << process->getName() << "\n";
+      std::cout << "ID: " << process->getId() << "\n\n";
+      
+      if (process->hasFinished()) {
+          std::cout << "Finished!\n\n";
+      }
+
+      std::cout << "Logs:\n";
+      for (const auto& log : process->getLogs()) {
+          std::cout << log << "\n";
+      }
+
+      std::cout << "\nCurrent instruction line: " << process->getExecutedInstructions() << "\n";
+      std::cout << "Lines of code: " << process->getTotalInstructions() << "\n";
+      
+      return;
   }
 }
