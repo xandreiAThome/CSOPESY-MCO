@@ -1,44 +1,53 @@
 #include "commands/print_command.hpp"
-#include "scheduler/global_scheduler.hpp"
-#include <iostream>
-#include <string>
-#include <fstream>
+#include "scheduler/process.hpp"
+
 #include <ctime>
 #include <iomanip>
-#include <filesystem>
+#include <sstream>
 
-PrintCommand::PrintCommand(int pid): pid(pid) {
-	if (pid < 10) {
-		toPrint = "\"Hello world from screen_0" + std::to_string(pid) + "\"";
-	}
-	else {
-		toPrint = "\"Hello world from screen_" + std::to_string(pid) + "\"";
-	}
+PrintCommand::PrintCommand()
+    : message(""),
+    variableName(""),
+    hasVariable(false),
+    useDefaultMessage(true) {
 }
 
-void PrintCommand::execute() {
-	int cpuCore = GlobalScheduler::get().getProcess(pid)->getCpuCore();
-	std::string filename = std::to_string(pid) + "_out.txt";
+PrintCommand::PrintCommand(const std::string& message)
+    : message(message),
+    variableName(""),
+    hasVariable(false),
+    useDefaultMessage(false) {
+}
 
-	bool fileExist = std::filesystem::exists(filename);
+PrintCommand::PrintCommand(const std::string& message, const std::string& variableName)
+    : message(message),
+    variableName(variableName),
+    hasVariable(true),
+    useDefaultMessage(false) {
+}
 
-	std::ofstream writeFile(filename, std::ios::app);
+void PrintCommand::execute(Process& process) {
+    std::string outputMessage;
 
-	if (!writeFile) {
-		return;
-	}
+    if (useDefaultMessage) {
+        outputMessage = "Hello world from " + process.getName() + "!";
+    }
+    else {
+        outputMessage = message;
 
-	// Write header if file is newly created
-	if (!fileExist) {
-		writeFile << GlobalScheduler::get().getProcess(pid)->getName() << '\n'
-			<< "Logs: \n\n";
-	}
+        if (hasVariable) {
+            outputMessage += std::to_string(process.getVariable(variableName));
+        }
+    }
 
-	auto t = std::time(nullptr);
-	auto tm = *std::localtime(&t);
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
 
-	writeFile << std::put_time(&tm, "(%m/%d/%Y %I:%M:%S%p) ") << "Core: " << cpuCore << ' '
-		<< toPrint << '\n';
+    std::ostringstream logLine;
 
-	writeFile.close();
+    logLine << std::put_time(&tm, "(%m/%d/%Y %I:%M:%S%p) ")
+        << "Core: " << process.getCpuCore() << " "
+        << "\"" << outputMessage << "\"";
+
+    process.addLog(logLine.str());
 }

@@ -1,11 +1,18 @@
 #pragma once
 
+class Process;
+
 enum CommandType {
 	PRINT,
-	ADD
+	DECLARE,
+	ADD,
+	SUBTRACT,
+	SLEEP,
+	FOR
 };
 
 class ICommand {
 public:
-	virtual void execute() = 0;
+	virtual ~ICommand() = default;
+	virtual void execute(Process& process) = 0;
 };

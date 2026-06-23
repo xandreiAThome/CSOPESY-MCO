@@ -86,7 +86,6 @@ bool MainMenuState::accepts(const ParsedCommand &command) const {
 
 void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   if (command.screenType == ScreenCommandType::LIST) {
-    std::cout << "screen -ls command recognized. Doing something.\n";
     GlobalScheduler::get().printProcessReport();
     return;
   }

@@ -14,7 +14,7 @@ add_executable(csopesy
   src/scheduler/core_worker.cpp
   src/scheduler/ietthread.cpp
   src/scheduler/global_scheduler.cpp
-  src/commands/print_command.cpp "src/globals.cpp" "src/scheduler/global_scheduler.cpp")
+  src/commands/print_command.cpp "src/globals.cpp" "src/scheduler/global_scheduler.cpp" "src/commands/declare_command.cpp" "src/commands/operand.cpp" "src/commands/subtract_command.cpp" "src/commands/sleep_command.cpp" "src/scheduler/process_factory.cpp")
 
 target_compile_features(csopesy PRIVATE cxx_std_20)
 target_include_directories(csopesy PRIVATE include)

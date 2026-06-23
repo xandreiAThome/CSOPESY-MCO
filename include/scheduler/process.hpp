@@ -5,8 +5,10 @@
 #include <cstdlib> 
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include "commands/icommand.hpp"
 #include "commands/print_command.hpp"
+#include "globals.hpp"
 
 
 class Process {
@@ -19,32 +21,33 @@ public:
     };
 
     Process(const std::string& processName, int processId, int numInstructions)
-        : name(processName), id(processId), totalInstructions(numInstructions), remainingInstructions(numInstructions), processState(ProcessState::READY) {
+        : name(processName), id(processId), totalInstructions(numInstructions), 
+        processState(ProcessState::READY) {
     }
 
     // Execute one instruction of the process
     void executeInstruction() {
-        if (remainingInstructions > 0) {
+        if (!hasFinished()) {
            // std::cout << "Core " << cpuCore << ": Executing instruction " <<
              //   totalInstructions - remainingInstructions + 1 << "/" << totalInstructions <<
                // " for " << name << "\n";
 
-            commandList[totalInstructions - remainingInstructions]->execute();
-
-            remainingInstructions--;
+            commandList[currentInstructionIndex]->execute(*this);
+            currentInstructionIndex++;
         }
         else {
             //std::cout << "Process " << id << ": " << name << " has already finished.\n";
+            return;
         }
     }
 
     // Get the remaining number of instructions
     int getRemainingInstructions() const {
-        return remainingInstructions;
+        return totalInstructions - currentInstructionIndex;
     }
 
     int getExecutedInstructions() const {
-        return totalInstructions - remainingInstructions;
+        return currentInstructionIndex;
     }
 
     int getTotalInstructions() const {
@@ -53,7 +56,7 @@ public:
 
     // Check if the process has finished
     bool hasFinished() const {
-        return remainingInstructions == 0;
+        return currentInstructionIndex >= totalInstructions;
     }
 
     int getId() const {
@@ -67,6 +70,28 @@ public:
     int getCpuCore() const {
         return cpuCore;
     }
+
+    uint16_t getVariable(const std::string& name) {
+        if (variables.find(name) == variables.end()) {
+            variables[name] = 0;
+        }
+
+        return variables[name];
+    }
+
+    ProcessState getState() const {
+        return processState;
+    }
+    
+    // if asleep
+    unsigned long long getWakeUpTick() const {
+        return wakeUpTick;
+    }
+
+    const std::vector<std::string>& getLogs() const {
+        return logs;
+    }
+
 
     void addCommand(CommandType commandType) {
         switch (commandType) {
@@ -92,12 +117,34 @@ public:
     }
 
 
+    void setVariable(const std::string& name, uint16_t value) {
+        variables[name] = value;
+    }
+
+    void addLog(const std::string& logMessage) {
+        logs.push_back(logMessage);
+    }
+
+
+    void sleep(uint8_t ticks) {
+        wakeUpTick = Globals::get().cpuCycles + ticks;
+        processState = ProcessState::WAITING;
+    }
+
+    // if asleep
+    bool isReadyToWake() const {
+        return processState == ProcessState::WAITING && Globals::get().cpuCycles >= wakeUpTick;
+    }
+
+   
+
+    
 
 private:
     std::string name;
     int id;
     int totalInstructions;
-    int remainingInstructions;
+    int currentInstructionIndex = 0;
 
     std::vector<std::shared_ptr<ICommand>> commandList;
     ProcessState processState;
@@ -105,8 +152,12 @@ private:
     int cpuCore = -1;
 
     unsigned long long arrivalTime;
+
+    std::unordered_map<std::string, uint16_t> variables;
+
+    std::vector<std::string> logs;  // for process-smi
+
+    unsigned long long wakeUpTick = -1 // if asleep
     
-
-
 };
 

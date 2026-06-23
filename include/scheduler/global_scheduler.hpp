@@ -140,7 +140,7 @@ private:
             std::cout << "Finished";
         }
         else {
-            std::cout << coreId + 1;
+            std::cout << coreId;
         }
 
         std::cout << " | "
