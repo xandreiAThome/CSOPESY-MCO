@@ -5,14 +5,13 @@
 #include <memory>
 #include <thread>
 
-CoreWorker::CoreWorker(int coreId) : coreId(coreId), isRunning(false) {}
+CoreWorker::CoreWorker(int coreId) : coreId(coreId) {}
 
 void CoreWorker::run() {
-    isRunning.store(true);
-    while (isRunning.load() && Globals::get().running) {
+    while (isRunning() && Globals::get().running) {
         std::shared_ptr<Process> process = GlobalScheduler::get().getNextProcess(coreId);
 
-        // wait idly until the dispatcher assigns a process
+        // wait idly until process is assigned
         if (process == nullptr) {
             sleep(1);
             continue;
@@ -25,14 +24,18 @@ void CoreWorker::run() {
 }
 
 void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
-    process->setState(Process::RUNNING);
     GlobalScheduler::get().markRunning(process);
     process->setCpuCore(coreId);
     
     int delay = Globals::get().delayPerExec;
 
-    while (!process->hasFinished() && isRunning.load() && Globals::get().running) {
+    while (!process->hasFinished() && isRunning() && Globals::get().running) {
         process->executeInstruction();
+
+        if (process->getState() == Process::WAITING) {
+            GlobalScheduler::get().markWaiting(process);
+            return;
+        }
 
         if (delay > 0) {
             waitForTicks(delay);
@@ -40,9 +43,7 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
     }
 
     if (process->hasFinished()) {
-        process->setState(Process::FINISHED);
         process->setCpuCore(-2);
-
         GlobalScheduler::get().markFinished(process);
     }
 }

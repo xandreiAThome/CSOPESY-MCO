@@ -55,11 +55,11 @@ std::shared_ptr<ICommand> ProcessFactory::generateRandomBasicCommand() {
     switch (commandType) {
     case 0:
         // 50% chance to print a variable, 50% chance for default message
-        if (std::rand() % 2 == 0) {
-            return std::make_shared<PrintCommand>("Value from: ", varName);
-        } else {
+      //  if (std::rand() % 2 == 0) {
+          //  return std::make_shared<PrintCommand>("Value from: ", varName);
+        //} else {
             return std::make_shared<PrintCommand>(); 
-        }
+       // }
     case 1:
         return std::make_shared<DeclareCommand>(varName, static_cast<uint16_t>(std::rand() % 100));
     case 2:

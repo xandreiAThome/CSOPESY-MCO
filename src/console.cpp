@@ -51,9 +51,11 @@ void Console::run() {
         current_state->handle(*this, command);
         continue;
       }
+      else {
+          current_state->handle(*this, command);
+          return;
+      }
 
-      Globals::get().running = 0;
-      std::cout << "Shutting down...\n";
       return;
     }
 

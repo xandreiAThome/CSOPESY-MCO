@@ -68,12 +68,16 @@ public:
 
             assignedCore = nextCore;
             nextCore = (nextCore + 1) % numCores;
+
+            
         }
 
         scheduler->enqueue(process, assignedCore);
+        
     }
 
     std::shared_ptr<Process> getNextProcess(int coreId) {
+      
         auto process = scheduler->getNextProcess(coreId);
 
         if (process != nullptr) {
@@ -122,6 +126,7 @@ public:
         runningProcesses.erase(name);
 
         waitingProcesses[name] = process;
+        process->setState(Process::ProcessState::WAITING);
     }
 
     void markRunning(std::shared_ptr<Process> process) {
@@ -133,6 +138,7 @@ public:
         waitingProcesses.erase(name);
 
         runningProcesses[name] = process;
+        process->setState(Process::ProcessState::RUNNING);
     }
 
     void markFinished(std::shared_ptr<Process> process) {
@@ -147,6 +153,7 @@ public:
         runningProcesses.erase(name);
 
         finishedProcessCache[name] = info;
+        process->setState(Process::ProcessState::FINISHED);
     }
 
     std::string buildProcessReport() {
@@ -220,6 +227,56 @@ public:
         addProcess(newProcess);
     }
 
+    // Wake up sleeping / waiting processes
+    void wakeReadyProcesses() {
+        std::vector<std::shared_ptr<Process>> readyToWake;
+
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+
+            for (auto it = waitingProcesses.begin(); it != waitingProcesses.end(); ) {
+                auto process = it->second;
+
+                if (process->isReadyToWake()) {
+                    process->setState(Process::READY);
+
+                    readyProcesses[process->getName()] = process;
+                    readyToWake.push_back(process);
+
+                    it = waitingProcesses.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+        }
+
+        for (auto& process : readyToWake) {
+            scheduler->enqueue(process, process->getCpuCore());
+        }
+    }
+
+    // Stop all threads
+    void stop() {
+        generateProcesses.store(false);
+
+        for (auto& worker : workers) {
+            worker->stop();
+        }
+
+        IETThread::stop();
+    }
+
+    bool allWorkersFinished() const {
+        for (const auto& worker : workers) {
+            if (!worker->finished()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 
 private:
     std::map<std::string, std::shared_ptr<Process>> readyProcesses;
@@ -243,6 +300,8 @@ private:
     void run() override {
         unsigned long long lastGenerationTick = 0;
         while (Globals::get().running) {
+            wakeReadyProcesses(); // Repeatedly check if processes are sleeping.
+
             // process generation
             if (generateProcesses.load()) {
                 unsigned long long currentTick = Globals::get().cpuCycles.load();
@@ -271,6 +330,8 @@ private:
                     lastGenerationTick = currentTick;
                 }
             }
+
+            sleep(1);
         }
     }
 

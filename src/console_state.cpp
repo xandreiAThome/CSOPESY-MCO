@@ -112,22 +112,33 @@ void MainMenuState::handle(Console &console, const ParsedCommand &command) {
 
 
 
-if (command.type == ConsoleCommandType::SCHEDULER_START) {
-      GlobalScheduler::get().toggleProcessGeneration(true);
-      std::cout << "Process generation started.\n";
-      return;
-  }
+      if (command.type == ConsoleCommandType::SCHEDULER_START) {
+          GlobalScheduler::get().toggleProcessGeneration(true);
+          std::cout << "Process generation started.\n";
+          return;
+      }
 
-  if (command.type == ConsoleCommandType::SCHEDULER_STOP) {
-      GlobalScheduler::get().toggleProcessGeneration(false);
-      std::cout << "Process generation stopped.\n";
-      return;
-  }
+      if (command.type == ConsoleCommandType::SCHEDULER_STOP) {
+          GlobalScheduler::get().toggleProcessGeneration(false);
+          std::cout << "Process generation stopped.\n";
+          return;
+      }
 
-  if (command.type == ConsoleCommandType::REPORT_UTIL) {
-    GlobalScheduler::get().writeProcessReportToFile();
-    return;
-  }
+      if (command.type == ConsoleCommandType::REPORT_UTIL) {
+        GlobalScheduler::get().writeProcessReportToFile();
+        return;
+      }
+
+      if (command.type == ConsoleCommandType::EXIT) {
+          std::cout << "Shutting down...\n";
+          Globals::get().running = false;
+          GlobalScheduler::get().stop();
+
+          while (!GlobalScheduler::get().finished() ||
+              !GlobalScheduler::get().allWorkersFinished()) {
+              std::this_thread::sleep_for(std::chrono::milliseconds(1));
+          }
+      }
 }
 
 bool ProcessScreenState::accepts(const ParsedCommand &command) const {
