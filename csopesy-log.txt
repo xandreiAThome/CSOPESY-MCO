@@ -1,0 +1,8 @@
+CPU Status:
+Cores Available: 128
+Cores Used: 0
+CPU Utilization: 0%
+-----------------------------
+Running:
+
+Finished:

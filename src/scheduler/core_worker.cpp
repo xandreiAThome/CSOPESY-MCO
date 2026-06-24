@@ -10,16 +10,17 @@ CoreWorker::CoreWorker(int coreId) : coreId(coreId), isRunning(false) {}
 void CoreWorker::run() {
     isRunning.store(true);
     while (isRunning.load() && Globals::get().running) {
+        std::shared_ptr<Process> process = GlobalScheduler::get().getNextProcess(coreId);
+
         // wait idly until the dispatcher assigns a process
-        if (currentProcess == nullptr) {
-            std::this_thread::yield(); 
+        if (process == nullptr) {
+            sleep(1);
             continue;
         }
 
-        executeProcess(currentProcess);
+        executeProcess(process);
         
-        // clear the current process so the dispatcher knows we are idle after finishing
-        currentProcess = nullptr;
+       
     }
 }
 

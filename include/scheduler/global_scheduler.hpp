@@ -12,6 +12,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 #include "scheduler/process.hpp"
 #include "scheduler/ietthread.hpp"
@@ -44,9 +45,6 @@ public:
         IETThread::start(); 
     }
 
-
-
-
     void toggleProcessGeneration(bool enable) {
         generateProcesses.store(enable);
     }
@@ -73,6 +71,16 @@ public:
         }
 
         scheduler->enqueue(process, assignedCore);
+    }
+
+    std::shared_ptr<Process> getNextProcess(int coreId) {
+        auto process = scheduler->getNextProcess(coreId);
+
+        if (process != nullptr) {
+            markRunning(process);
+        }
+
+        return process;
     }
 
     
@@ -179,10 +187,11 @@ public:
         }
 
         file << buildProcessReport();
-
         file.close();
 
-        std::cout << "Report generated at /csopesy-log.txt!\n";
+        std::cout << "Report generated at "
+            << std::filesystem::absolute(filename)
+            << "!\n";
     }
 
     bool processExists(const std::string& pName) {
@@ -262,20 +271,6 @@ private:
                     lastGenerationTick = currentTick;
                 }
             }
-
-            // dispatcher
-            for (int i = 0; i < numCores; i++) {
-                if (!scheduler->isQueueEmpty(i)) {
-                    if (workers[i]->isIdle()) {
-                        auto process = scheduler->getNextProcess(i);
-                        if (process != nullptr) {
-                            workers[i]->assignProcess(process);
-                        }
-                    }
-                }
-            }
-
-            std::this_thread::yield(); 
         }
     }
 
@@ -303,14 +298,31 @@ private:
 
     void writeCpuStatus(std::ostream& out) {
         int coresUsed = 0;
+        int coresAvailable = 0;
 
-        for (const auto& worker : workers) {
-            if (!worker->isIdle()) {
+
+        for (int coreId = 0; coreId < numCores; coreId++) {
+            bool queueEmpty = scheduler->isQueueEmpty(coreId);
+
+            bool hasRunningProcess = false;
+
+            for (const auto& pair : runningProcesses) {
+                auto process = pair.second;
+
+                if (process->getCpuCore() == coreId) {
+                    hasRunningProcess = true;
+                    break;
+                }
+            }
+
+            if (queueEmpty && !hasRunningProcess) {
+                coresAvailable++;
+            }
+            else {
                 coresUsed++;
             }
         }
-
-        int coresAvailable = numCores - coresUsed;
+    
         double cpuUtilization = 0.0;
 
         if (numCores > 0) {
