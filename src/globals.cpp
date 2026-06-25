@@ -28,12 +28,20 @@ bool Globals::init() {
 		size_t spacePos = setting.find(' ');
 
 		if (spacePos == std::string::npos) {
-			std::cout << "Invalid config line: " << setting << '\n';
-			return false;
+			continue;
 		}
 
 		std::string settingVal = setting.substr(spacePos + 1);
-        settingVec.push_back(settingVal);
+
+		// trim trailing whitespace
+		size_t end = settingVal.find_last_not_of(" \t\r");
+		if (end != std::string::npos) {
+			settingVal = settingVal.substr(0, end + 1);
+		}
+
+		if (!settingVal.empty()) {
+			settingVec.push_back(settingVal);
+		}
 	}
 
 	if (settingVec.size() < 7) {
