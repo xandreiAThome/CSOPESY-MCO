@@ -3,7 +3,12 @@
 
 #include <ctime>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
+
+namespace {
+  std::mutex localtimeMutex;
+}
 
 PrintCommand::PrintCommand()
     : message(""),
@@ -41,7 +46,12 @@ void PrintCommand::execute(Process& process) {
     }
 
     auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
+    std::tm tm;
+
+    {
+        std::lock_guard<std::mutex> lock(localtimeMutex);
+        tm = *std::localtime(&t);
+    }
 
     std::ostringstream logLine;
 

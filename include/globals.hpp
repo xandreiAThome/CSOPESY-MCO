@@ -17,7 +17,7 @@ struct Globals {
 	int maxIns;
 	int delayPerExec;
 
-	bool running = true;
+	std::atomic<bool> running{ true };
 
 	// updates per frame
 	std::atomic<unsigned long long> cpuCycles = 0;
