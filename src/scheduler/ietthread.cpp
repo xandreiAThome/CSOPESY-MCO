@@ -14,3 +14,11 @@ void IETThread::stop() {
 void IETThread::sleep(int ms) {
 	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
 }
+
+bool IETThread::finished() const {
+	return hasStopped.load();
+}
+
+bool IETThread::isRunning() const {
+	return running;
+}

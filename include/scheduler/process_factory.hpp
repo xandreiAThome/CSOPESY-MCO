@@ -22,8 +22,6 @@ public:
     );
 
 private:
-    const int MAX_FOR_DEPTH = 3;
-
     static void generateRandomCommands(
         std::shared_ptr<Process> process,
         int numInstructions

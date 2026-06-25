@@ -1,49 +1,56 @@
 #include "scheduler/core_worker.hpp"
-#include "scheduler/process.hpp"
-#include "scheduler/global_scheduler.hpp"
 #include "globals.hpp"
+#include "scheduler/global_scheduler.hpp"
+#include "scheduler/process.hpp"
 #include <memory>
-#include <thread>
 
 CoreWorker::CoreWorker(int coreId) : coreId(coreId) {}
 
 void CoreWorker::run() {
-    while (isRunning() && Globals::get().running) {
-        std::shared_ptr<Process> process = GlobalScheduler::get().getNextProcess(coreId);
+  while (isRunning() && Globals::get().running) {
+    std::shared_ptr<Process> process =
+        GlobalScheduler::get().getNextProcess(coreId);
 
-        // wait idly until process is assigned
-        if (process == nullptr) {
-            sleep(1);
-            continue;
-        }
-
-        executeProcess(process);
-        
-       
+    // wait idly until process is assigned
+    if (process == nullptr) {
+      sleep(1);
+      continue;
     }
+
+    executeProcess(process);
+  }
+}
+
+void CoreWorker::waitForTicks(unsigned long long ticksToWait) {
+  unsigned long long startTick = Globals::get().cpuCycles.load();
+
+  while (isRunning() &&
+         Globals::get().cpuCycles.load() - startTick < ticksToWait) {
+    sleep(1);
+  }
 }
 
 void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
-    GlobalScheduler::get().markRunning(process);
-    process->setCpuCore(coreId);
-    
-    int delay = Globals::get().delayPerExec;
+  GlobalScheduler::get().markRunning(process);
+  process->setCpuCore(coreId);
 
-    while (!process->hasFinished() && isRunning() && Globals::get().running) {
-        process->executeInstruction();
+  int delay = Globals::get().delayPerExec;
 
-        if (process->getState() == Process::WAITING) {
-            GlobalScheduler::get().markWaiting(process);
-            return;
-        }
+  while (!process->hasFinished() && isRunning() && Globals::get().running) {
+    process->executeInstruction();
 
-        if (delay > 0) {
-            waitForTicks(delay);
-        }
+    if (process->getState() == Process::WAITING) {
+      GlobalScheduler::get().markWaiting(process);
+      return;
     }
 
-    if (process->hasFinished()) {
-        process->setCpuCore(-2);
-        GlobalScheduler::get().markFinished(process);
+    if (delay > 0) {
+      waitForTicks(delay);
     }
+  }
+
+  if (process->hasFinished()) {
+    process->setCpuCore(-2);
+    GlobalScheduler::get().markFinished(process);
+  }
 }

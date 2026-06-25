@@ -2,7 +2,6 @@
 #include "console.hpp"
 #include "parser.hpp"
 #include "terminal_utils.hpp"
-#include "globals.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -29,8 +28,8 @@ const char *Console::currentStateName() const {
 
 void Console::run() {
   while (true) {
-     //  std::cout << "CURRENT TICK: " << Globals::get().cpuCycles;
-    std::cout << "\nCurrent state: " << currentStateName() << '\n';
+    //  std::cout << "CURRENT TICK: " << Globals::get().cpuCycles;
+    // std::cout << "\nCurrent state: " << currentStateName() << '\n';
     std::cout << current_state->commandPrompt() << '\n';
     std::cout << "> ";
 
@@ -50,10 +49,9 @@ void Console::run() {
       if (dynamic_cast<ProcessScreenState *>(current_state.get()) != nullptr) {
         current_state->handle(*this, command);
         continue;
-      }
-      else {
-          current_state->handle(*this, command);
-          return;
+      } else {
+        current_state->handle(*this, command);
+        return;
       }
 
       return;

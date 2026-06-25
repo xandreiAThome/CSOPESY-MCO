@@ -8,10 +8,10 @@ public:
 	void start();
 	void stop();
 	static void sleep(int ms);
-	bool finished() const { return hasStopped.load(); }
+	bool finished() const;
 protected:
 	virtual void run() = 0;
-	bool isRunning() const { return running; }
+	bool isRunning() const;
 
 private:
 	std::atomic<bool> running{ false };
