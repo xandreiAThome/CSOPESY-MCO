@@ -3,30 +3,30 @@
 
 Process::Process(const std::string& processName, int processId, int numInstructions)
     : name(processName), id(processId), totalInstructions(numInstructions),
-    processState(ProcessState::READY) {
+    processState(static_cast<int>(ProcessState::READY)) {
 }
 
 void Process::executeInstruction() {
     if (!hasFinished()) {
-        commandList[currentInstructionIndex]->execute(*this);
-        currentInstructionIndex++;
+        commandList[currentInstructionIndex.load()]->execute(*this);
+        currentInstructionIndex.fetch_add(1);
     }
 }
 
 int Process::getRemainingInstructions() const {
-    return totalInstructions - currentInstructionIndex;
+    return totalInstructions - currentInstructionIndex.load();
 }
 
 int Process::getExecutedInstructions() const {
-    return currentInstructionIndex;
+    return currentInstructionIndex.load();
+}
+
+bool Process::hasFinished() const {
+    return currentInstructionIndex.load() >= totalInstructions;
 }
 
 int Process::getTotalInstructions() const {
     return totalInstructions;
-}
-
-bool Process::hasFinished() const {
-    return currentInstructionIndex >= totalInstructions;
 }
 
 int Process::getId() const {
@@ -38,7 +38,7 @@ std::string Process::getName() const {
 }
 
 int Process::getCpuCore() const {
-    return cpuCore;
+    return cpuCore.load();
 }
 
 uint16_t Process::getVariable(const std::string& name) {
@@ -49,14 +49,15 @@ uint16_t Process::getVariable(const std::string& name) {
 }
 
 Process::ProcessState Process::getState() const {
-    return processState;
+    return static_cast<ProcessState>(processState.load());
 }
 
 unsigned long long Process::getWakeUpTick() const {
-    return wakeUpTick;
+    return wakeUpTick.load();
 }
 
-const std::vector<std::string>& Process::getLogs() const {
+std::vector<std::string> Process::getLogs() const {
+    std::lock_guard<std::mutex> lock(logsMutex);
     return logs;
 }
 
@@ -66,11 +67,11 @@ void Process::addCommand(std::shared_ptr<ICommand> command) {
 }
 
 void Process::setState(ProcessState newState) {
-    processState = newState;
+    processState.store(static_cast<int>(newState));
 }
 
 void Process::setCpuCore(int newCoreId) {
-    this->cpuCore = newCoreId;
+    cpuCore.store(newCoreId);
 }
 
 void Process::setArrivalTime(unsigned long long newTime) {
@@ -82,14 +83,16 @@ void Process::setVariable(const std::string& name, uint16_t value) {
 }
 
 void Process::addLog(const std::string& logMessage) {
+    std::lock_guard<std::mutex> lock(logsMutex);
     logs.push_back(logMessage);
 }
 
 void Process::sleep(uint8_t ticks) {
-    wakeUpTick = Globals::get().cpuCycles + ticks;
-    processState = ProcessState::WAITING;
+    wakeUpTick.store(Globals::get().cpuCycles + ticks);
+    processState.store(static_cast<int>(ProcessState::WAITING));
 }
 
 bool Process::isReadyToWake() const {
-    return processState == ProcessState::WAITING && Globals::get().cpuCycles >= wakeUpTick;
+    return static_cast<ProcessState>(processState.load()) == ProcessState::WAITING
+        && Globals::get().cpuCycles >= wakeUpTick.load();
 }

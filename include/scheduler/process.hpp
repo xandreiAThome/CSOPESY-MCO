@@ -5,6 +5,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <atomic>
+#include <mutex>
 #include <cstdint>
 #include "commands/icommand.hpp"
 
@@ -30,7 +32,7 @@ public:
     uint16_t getVariable(const std::string& name);
     ProcessState getState() const;
     unsigned long long getWakeUpTick() const;
-    const std::vector<std::string>& getLogs() const;
+    std::vector<std::string> getLogs() const;
 
     void addCommand(std::shared_ptr<ICommand> command);
     void setState(ProcessState newState);
@@ -45,14 +47,15 @@ private:
     std::string name;
     int id;
     int totalInstructions;
-    int currentInstructionIndex = 0;
+    std::atomic<int> currentInstructionIndex{ 0 };
 
     std::vector<std::shared_ptr<ICommand>> commandList;
-    ProcessState processState;
-    int cpuCore = -1;
+    std::atomic<int> processState;
+    std::atomic<int> cpuCore{ -1 };
     unsigned long long arrivalTime;
     std::unordered_map<std::string, uint16_t> variables;
     std::vector<std::string> logs;
-    unsigned long long wakeUpTick = -1;
+    mutable std::mutex logsMutex;
+    std::atomic<unsigned long long> wakeUpTick{ ~0ULL };
 };
 
