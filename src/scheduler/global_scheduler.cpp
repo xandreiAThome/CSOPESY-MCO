@@ -271,7 +271,7 @@ void GlobalScheduler::run() {
       }
     }
 
-    sleep(1);
+    sleep(16);
   }
 }
 
