@@ -4,7 +4,11 @@
 
 void IETThread::start() {
 	running.store(true);
-	std::thread(&IETThread::run, this).detach();
+	hasStopped.store(false);
+	std::thread([this]() {
+		run();
+		hasStopped.store(true);
+	}).detach();
 }
 
 void IETThread::stop() {
