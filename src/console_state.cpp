@@ -82,10 +82,9 @@ void UninitializedState::handle(Console &console,
     } else {
       std::cout << "Errors found in config.txt \n";
     }
-  }
 
-  // start scheduler
-  GlobalScheduler::get().start();
+    GlobalScheduler::get().start();
+  }
 }
 
 bool MainMenuState::accepts(const ParsedCommand &command) const {
