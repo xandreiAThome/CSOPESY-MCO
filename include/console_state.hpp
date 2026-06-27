@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 class Console;
 struct ParsedCommand;
 
@@ -21,7 +23,7 @@ public:
   const char *commandPrompt() const override;
   const char *invalidCommandMessage() const override;
 
-  const char *current_state() const override { return "Cli uninitialized"; }
+  const char *current_state() const override;
 };
 
 class MainMenuState : public ConsoleBaseState {
@@ -30,16 +32,21 @@ public:
   bool accepts(const ParsedCommand &command) const override;
   const char *commandPrompt() const override;
   const char *invalidCommandMessage() const override;
-
-  const char *current_state() const override { return "Cli main menu"; }
+  const char *current_state() const override;
 };
 
 class ProcessScreenState : public ConsoleBaseState {
 public:
+  ProcessScreenState(const std::string& processName);
+
   void handle(Console &console, const ParsedCommand &command) override;
   bool accepts(const ParsedCommand &command) const override;
   const char *commandPrompt() const override;
   const char *invalidCommandMessage() const override;
+  const char *current_state() const override;
 
-  const char *current_state() const override { return "Cli process screen"; }
+private:
+  std::string attachedProcessName; 
+  std::string customPrompt;
+  std::string customState;
 };

@@ -1,0 +1,28 @@
+#include "scheduler/ietthread.hpp"
+#include <thread>
+#include <chrono>
+
+void IETThread::start() {
+	running.store(true);
+	hasStopped.store(false);
+	std::thread([this]() {
+		run();
+		hasStopped.store(true);
+	}).detach();
+}
+
+void IETThread::stop() {
+	running.store(false);
+}
+
+void IETThread::sleep(int ms) {
+	std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+}
+
+bool IETThread::finished() const {
+	return hasStopped.load();
+}
+
+bool IETThread::isRunning() const {
+	return running;
+}

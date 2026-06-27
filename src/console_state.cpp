@@ -1,8 +1,12 @@
 #include "console.hpp"
+#include "globals.hpp"
 #include "parser.hpp"
+#include "scheduler/global_scheduler.hpp"
+#include "scheduler/process_cache.hpp"
 #include "terminal_utils.hpp"
 #include <iostream>
 #include <memory>
+#include <thread>
 
 const char *UninitializedState::commandPrompt() const {
   return "Choose command (initialize, exit, clear):";
@@ -21,12 +25,33 @@ const char *MainMenuState::invalidCommandMessage() const {
   return "Unknown command. Try again.";
 }
 
-const char *ProcessScreenState::commandPrompt() const {
-  return "Choose command (process-smi, clear, exit):";
-}
+// const char *ProcessScreenState::commandPrompt() const {
+//   return "Choose command (process-smi, clear, exit):";
+// }
 
 const char *ProcessScreenState::invalidCommandMessage() const {
   return "Unknown command. Try again.";
+}
+
+const char *UninitializedState::current_state() const {
+  return "Cli uninitialized";
+}
+
+const char *MainMenuState::current_state() const { return "Cli main menu"; }
+
+ProcessScreenState::ProcessScreenState(const std::string &processName)
+    : attachedProcessName(processName) {
+  customPrompt =
+      "Choose command for " + processName + " (process-smi, clear, exit):";
+  customState = "Attached to Screen: " + processName;
+}
+
+const char *ProcessScreenState::commandPrompt() const {
+  return customPrompt.c_str();
+}
+
+const char *ProcessScreenState::current_state() const {
+  return customState.c_str();
 }
 
 bool UninitializedState::accepts(const ParsedCommand &command) const {
@@ -36,8 +61,29 @@ bool UninitializedState::accepts(const ParsedCommand &command) const {
 void UninitializedState::handle(Console &console,
                                 const ParsedCommand &command) {
   if (command.type == ConsoleCommandType::INIT) {
+    bool configSuccess = Globals::get().init();
     clearTerminal();
-    console.setState(std::make_unique<MainMenuState>());
+
+    if (configSuccess) {
+      console.setState(std::make_unique<MainMenuState>());
+      std::cout << "Settings initialized:\n";
+      std::cout << "Number of CPUs: " << Globals::get().numCpu << '\n';
+      std::cout << "Scheduler: "
+                << (Globals::get().scheduler == SchedulerType::FCFS ? "FCFS"
+                                                                    : "RR")
+                << '\n';
+      std::cout << "Quantum Cycles: " << Globals::get().quantumCycles << '\n';
+      std::cout << "Batch Process Frequency: "
+                << Globals::get().batchProcessFreq << '\n';
+      std::cout << "Minimum Instructions: " << Globals::get().minIns << '\n';
+      std::cout << "Maximum Instructions: " << Globals::get().maxIns << '\n';
+      std::cout << "Delay Per Execution: " << Globals::get().delayPerExec
+                << '\n';
+    } else {
+      std::cout << "Errors found in config.txt \n";
+    }
+
+    GlobalScheduler::get().start();
   }
 }
 
@@ -53,30 +99,59 @@ bool MainMenuState::accepts(const ParsedCommand &command) const {
 
 void MainMenuState::handle(Console &console, const ParsedCommand &command) {
   if (command.screenType == ScreenCommandType::LIST) {
-    std::cout << "screen -ls command recognized. Doing something.\n";
+    GlobalScheduler::get().printProcessReport();
     return;
   }
 
-  if (command.screenType == ScreenCommandType::CREATE ||
-      command.screenType == ScreenCommandType::RESUME) {
-    clearTerminal();
-    console.setState(std::make_unique<ProcessScreenState>());
-    return;
+  if (command.screenType == ScreenCommandType::CREATE) {
+    if (!GlobalScheduler::get().processExists(command.target)) {
+      GlobalScheduler::get().createProcess(command.target);
+
+      clearTerminal();
+      console.setState(std::make_unique<ProcessScreenState>(command.target));
+      return;
+    } else {
+      std::cout << "Process name already exists\n";
+    }
+  }
+
+  if (command.screenType == ScreenCommandType::RESUME) {
+
+    if (GlobalScheduler::get().processExists(command.target)) {
+      clearTerminal();
+      console.setState(std::make_unique<ProcessScreenState>(command.target));
+      return;
+    } else {
+      std::cout << "No process found: " << command.target << "\n";
+    }
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_START) {
-    std::cout << "scheduler-start command recognized. Doing something.\n";
+    GlobalScheduler::get().toggleProcessGeneration(true);
+    std::cout << "Process generation started.\n";
     return;
   }
 
   if (command.type == ConsoleCommandType::SCHEDULER_STOP) {
-    std::cout << "scheduler-stop command recognized. Doing something.\n";
+    GlobalScheduler::get().toggleProcessGeneration(false);
+    std::cout << "Process generation stopped.\n";
     return;
   }
 
   if (command.type == ConsoleCommandType::REPORT_UTIL) {
-    std::cout << "report-util command recognized. Doing something.\n";
+    GlobalScheduler::get().writeProcessReportToFile();
     return;
+  }
+
+  if (command.type == ConsoleCommandType::EXIT) {
+    std::cout << "Shutting down...\n";
+    Globals::get().running = false;
+    GlobalScheduler::get().stop();
+
+    while (!GlobalScheduler::get().finished() ||
+           !GlobalScheduler::get().allWorkersFinished()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
   }
 }
 
@@ -94,7 +169,34 @@ void ProcessScreenState::handle(Console &console,
   }
 
   if (command.type == ConsoleCommandType::PROCESS_SMI) {
-    std::cout << "process-smi command recognized. Doing something.\n";
+
+    ProcessCache process;
+    bool processFound =
+        GlobalScheduler::get().getProcessCache(attachedProcessName, process);
+
+    if (!processFound) {
+      std::cout << "Process " << attachedProcessName << " not found.\n";
+      return;
+    }
+
+    std::cout << "Process name: " << process.name << "\n";
+    std::cout << "ID: " << process.pid << "\n\n";
+
+    std::cout << "Logs:\n";
+    int line = 0;
+    for (const auto &log : process.logs) {
+      std::cout << line << ":: " << log << "\n";
+      line++;
+    }
+
+    std::cout << "\nCurrent instruction line: " << process.executedInstructions
+              << "\n";
+    std::cout << "Lines of code: " << process.totalInstructions << "\n";
+
+    if (process.executedInstructions == process.totalInstructions) {
+      std::cout << "Finished!\n\n";
+    }
+
     return;
   }
 }
