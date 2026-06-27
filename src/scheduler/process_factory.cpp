@@ -194,3 +194,31 @@ ProcessFactory::generateRandomForLoop(int currentForDepth) {
 std::string ProcessFactory::randomVariableName() {
   return "var_" + std::to_string(std::rand() % 10);
 }
+
+std::shared_ptr<Process> ProcessFactory::createFixedProcess(
+    const std::string& processName, int processId) {
+    auto process = std::make_shared<Process>(processName, processId, 0);
+
+    // seed x, y, z = 0 explicitly, satisfying "in symbol table" at creation
+    process->addCommand(std::make_shared<DeclareCommand>("x", 0));
+    process->addCommand(std::make_shared<DeclareCommand>("y", 0));
+    process->addCommand(std::make_shared<DeclareCommand>("z", 0));
+
+    std::vector<std::shared_ptr<ICommand>> innerBlock = {
+      std::make_shared<AddCommand>("x", Operand::variable("x"), Operand::value(1)),
+      std::make_shared<PrintCommand>("Value from: ", "x"),
+      std::make_shared<AddCommand>("y", Operand::variable("y"), Operand::value(1)),
+      std::make_shared<PrintCommand>("Value from: ", "y"),
+      std::make_shared<AddCommand>("z", Operand::variable("z"), Operand::value(1)),
+      std::make_shared<PrintCommand>("Value from: ", "z"),
+    };
+
+    auto forCommand = std::make_shared<ForCommand>(innerBlock, 100);
+    auto expanded = expandCommand(forCommand);
+
+    for (const auto& cmd : expanded) {
+        process->addCommand(cmd);
+    }
+
+    return process;
+}

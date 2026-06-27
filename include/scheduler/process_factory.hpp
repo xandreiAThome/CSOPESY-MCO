@@ -30,7 +30,10 @@ public:
         const std::vector<std::shared_ptr<ICommand>>& commands
     );
 
-
+    static std::shared_ptr<Process> createFixedProcess(
+        const std::string& processName,
+        int processId
+    );
 private:
     static void generateRandomCommands(
         std::shared_ptr<Process> process,
