@@ -197,7 +197,7 @@ void GlobalScheduler::createProcess(const std::string &name) {
   int insCount = minIns + (std::rand() % (maxIns - minIns + 1));
 
   auto newProcess = ProcessFactory::createProcess(name, newPid, insCount);
-
+  //auto newProcess = ProcessFactory::createFixedProcess(name, newPid);
   addProcess(newProcess);
 }
 
@@ -268,6 +268,7 @@ void GlobalScheduler::run() {
         int insCount = minIns + (std::rand() % (maxIns - minIns + 1));
 
         auto newProcess = ProcessFactory::createProcess(name, newPid, insCount);
+        //auto newProcess = ProcessFactory::createFixedProcess(name, newPid);
 
         addProcess(newProcess);
 
