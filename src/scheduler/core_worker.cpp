@@ -35,6 +35,9 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
   process->setCpuCore(coreId);
 
   int delay = Globals::get().delayPerExec;
+  bool isRR = Globals::get().scheduler == SchedulerType::RR;
+  unsigned long long quantum = Globals::get().quantumCycles;
+  unsigned long long burstStartTick = Globals::get().cpuCycles.load();
 
   while (!process->hasFinished() && isRunning() && Globals::get().running) {
     process->executeInstruction();
@@ -42,6 +45,14 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
     if (process->getState() == Process::WAITING) {
       GlobalScheduler::get().markWaiting(process);
       return;
+    }
+
+    if (isRR) {
+      unsigned long long elapsed = Globals::get().cpuCycles.load() - burstStartTick;
+      if (elapsed >= quantum) {
+        GlobalScheduler::get().preempt(process, coreId);
+        return;
+      }
     }
 
     if (delay > 0) {

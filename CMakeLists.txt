@@ -11,6 +11,7 @@ add_executable(csopesy
   src/parser.cpp
   src/terminal_utils.cpp
   src/scheduler/fcfsscheduler.cpp
+  src/scheduler/rrscheduler.cpp
   src/scheduler/process.cpp 
   src/scheduler/core_worker.cpp
   src/scheduler/ietthread.cpp

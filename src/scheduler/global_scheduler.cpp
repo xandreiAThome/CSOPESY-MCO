@@ -1,13 +1,17 @@
 #include "scheduler/global_scheduler.hpp"
 #include "globals.hpp"
 #include "scheduler/fcfsscheduler.hpp"
+#include "scheduler/rrscheduler.hpp"
 #include "scheduler/process_factory.hpp"
 #include <fstream>
 #include <sstream>
 #include <filesystem>
 
 GlobalScheduler::GlobalScheduler(int cores)
-    : scheduler(std::make_unique<FCFSScheduler>(cores)), numCores(cores) {
+    : scheduler(Globals::get().scheduler == SchedulerType::RR
+                  ? std::unique_ptr<IScheduler>(std::make_unique<RRScheduler>(cores))
+                  : std::unique_ptr<IScheduler>(std::make_unique<FCFSScheduler>(cores))),
+      numCores(cores) {
   for (int i = 0; i < numCores; i++) {
     workers.push_back(std::make_unique<CoreWorker>(i));
   }
@@ -359,4 +363,15 @@ bool GlobalScheduler::processExistsNoLock(const std::string &pName) {
 
 int GlobalScheduler::generatePid() {
   return generatedProcessCount.fetch_add(1) + 1;
+}
+
+void GlobalScheduler::preempt(std::shared_ptr<Process> process, int coreId) {
+  {
+    std::lock_guard<std::mutex> lock(mutex);
+    std::string name = process->getName();
+    runningProcesses.erase(name);
+    readyProcesses[name] = process;
+    process->setState(Process::ProcessState::READY);
+  }
+  scheduler->enqueue(process, coreId);
 }
