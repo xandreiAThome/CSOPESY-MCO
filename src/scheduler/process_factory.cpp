@@ -6,6 +6,7 @@
 #include "commands/print_command.hpp"
 #include "commands/sleep_command.hpp"
 #include "commands/subtract_command.hpp"
+#include "commands/for_command.hpp"
 
 #include <cstdlib>
 
@@ -24,102 +25,171 @@ ProcessFactory::createTestProcess(const std::string &processName,
   return process;
 }
 
-void ProcessFactory::generateRandomCommands(std::shared_ptr<Process> process,
-                                            int numInstructions) {
-  // start generating blocks at For-Loop Depth 0
-  auto commands = generateRandomCommandBlock(numInstructions, 0);
+void ProcessFactory::generateRandomCommands(
+    std::shared_ptr<Process> process,
+    int numInstructions
+) {
+    std::vector<std::shared_ptr<ICommand>> finalCommands;
 
-  for (const auto &cmd : commands) {
-    process->addCommand(cmd);
-  }
-}
+    while (static_cast<int>(finalCommands.size()) < numInstructions) {
+        std::shared_ptr<ICommand> rawCommand;
 
-std::shared_ptr<ICommand> ProcessFactory::generateRandomBasicCommand() {
-  int commandType = std::rand() % 5;
-  std::string varName = randomVariableName();
+        if (std::rand() % 100 < 15) {
+            rawCommand = generateRandomForLoop(1);
+        }
+        else {
+            rawCommand = generateRandomBasicCommand();
+        }
 
-  // helper to randomly decide between a variable or a raw value
-  auto randomOp = []() -> Operand {
-    if (std::rand() % 2 == 0) {
-      return Operand::variable(randomVariableName());
-    } else {
-      return Operand::value(static_cast<uint16_t>(std::rand() % 100));
-    }
-  };
+        auto expandedCandidate = expandCommand(rawCommand);
 
-  switch (commandType) {
-  case 0:
-    // 50% chance to print a variable, 50% chance for default message
-    //  if (std::rand() % 2 == 0) {
-    //  return std::make_shared<PrintCommand>("Value from: ", varName);
-    //} else {
-    return std::make_shared<PrintCommand>();
-    // }
-  case 1:
-    return std::make_shared<DeclareCommand>(
-        varName, static_cast<uint16_t>(std::rand() % 100));
-  case 2:
-    return std::make_shared<AddCommand>(varName, randomOp(), randomOp());
-  case 3:
-    return std::make_shared<SubtractCommand>(varName, randomOp(), randomOp());
-  case 4:
-    return std::make_shared<SleepCommand>(
-        static_cast<uint8_t>(1 + (std::rand() % 10)));
-  default:
-    return std::make_shared<PrintCommand>();
-  }
-}
-
-std::vector<std::shared_ptr<ICommand>>
-ProcessFactory::generateRandomCommandBlock(int numInstructions,
-                                           int currentForDepth) {
-  const int MAX_DEPTH = 3;
-  std::vector<std::shared_ptr<ICommand>> block;
-  int remaining = numInstructions;
-
-  while (remaining > 0) {
-    // 15% chance to spawn a for loop, only if we haven't hit the depth limit of
-    // 3
-    if (currentForDepth < MAX_DEPTH && (std::rand() % 100 < 15)) {
-      auto loopBlock = generateRandomForLoop(currentForDepth + 1);
-
-      if (static_cast<int>(loopBlock.size()) <= remaining) {
-        block.insert(block.end(), loopBlock.begin(), loopBlock.end());
-        remaining -= static_cast<int>(loopBlock.size());
-        continue;
-      }
+        // Only insert for loop if it doesn't surpass the set number of instructions
+        if (
+            finalCommands.size() + expandedCandidate.size()
+            <= static_cast<size_t>(numInstructions)
+            ) {
+            finalCommands.insert(
+                finalCommands.end(),
+                expandedCandidate.begin(),
+                expandedCandidate.end()
+            );
+        }
+        else {
+            finalCommands.push_back(generateRandomBasicCommand());
+        }
     }
 
-    // otherwise, just push a standard instruction
-    block.push_back(generateRandomBasicCommand());
-    remaining--;
-  }
-
-  return block;
+    for (const auto& cmd : finalCommands) {
+        process->addCommand(cmd);
+    }
 }
 
+// Expand command if for loop. If not for loop, return same command
 std::vector<std::shared_ptr<ICommand>>
+ProcessFactory::expandCommand(
+    const std::shared_ptr<ICommand>& command
+) {
+    std::vector<std::shared_ptr<ICommand>> expanded;
+
+    auto forCommand = std::dynamic_pointer_cast<ForCommand>(command);
+
+    if (forCommand) {
+        forCommand->expandInto(expanded, 1);
+    }
+    else {
+        expanded.push_back(command);
+    }
+
+    return expanded;
+}
+
+// Optional expand an already given vector of commands 
+// e.g. [FOR(...), ADD, ADD, FOR(...)]
+std::vector<std::shared_ptr<ICommand>>
+ProcessFactory::expandCommands(
+    const std::vector<std::shared_ptr<ICommand>>& commands
+) {
+    std::vector<std::shared_ptr<ICommand>> expanded;
+
+    for (const auto& command : commands) {
+        auto expandedCommand = expandCommand(command);
+
+        expanded.insert(
+            expanded.end(),
+            expandedCommand.begin(),
+            expandedCommand.end()
+        );
+    }
+
+    return expanded;
+}
+
+
+std::shared_ptr<ICommand>
+ProcessFactory::generateRandomBasicCommand() {
+    int commandType = std::rand() % 5;  // Randmoly select non-for command type
+    std::string varName = randomVariableName();
+
+    // helper function for 50/50 variable or literal operand
+    auto randomOp = []() -> Operand {
+        if (std::rand() % 2 == 0) {
+            return Operand::variable(randomVariableName());
+        }
+        return Operand::value(static_cast<uint16_t>(std::rand() % 100));
+        };
+
+    switch (commandType) {
+    case 0:
+        return std::make_shared<PrintCommand>();
+
+    case 1:
+        return std::make_shared<DeclareCommand>(
+            varName,
+            static_cast<uint16_t>(std::rand() % 100)
+        );
+
+    case 2:
+        return std::make_shared<AddCommand>(
+            varName,
+            randomOp(),
+            randomOp()
+        );
+
+    case 3:
+        return std::make_shared<SubtractCommand>(
+            varName,
+            randomOp(),
+            randomOp()
+        );
+
+    case 4:
+        return std::make_shared<SleepCommand>(
+            static_cast<uint8_t>(1 + (std::rand() % 10))
+        );
+
+    default:
+        return std::make_shared<PrintCommand>();
+    }
+}
+
+// Command block for FOR loop
+std::vector<std::shared_ptr<ICommand>>
+ProcessFactory::generateRandomCommandBlock(
+    int numInstructions,
+    int currentForDepth
+) {
+    const int MAX_DEPTH = 3;
+
+    std::vector<std::shared_ptr<ICommand>> block;
+    int remaining = numInstructions;
+
+    while (remaining > 0) {
+        if (currentForDepth < MAX_DEPTH && std::rand() % 100 < 15) {
+            block.push_back(generateRandomForLoop(currentForDepth + 1));
+        }
+        else {
+            block.push_back(generateRandomBasicCommand());
+        }
+
+        remaining--;
+    }
+
+    return block;
+}
+
+std::shared_ptr<ICommand>
 ProcessFactory::generateRandomForLoop(int currentForDepth) {
-  int innerInstructionsCount = 1 + (std::rand() % 3);
-  int repeats = 2 + (std::rand() % 4);
+    int innerInstructionsCount = 1 + (std::rand() % 3);
+    int repeats = 2 + (std::rand() % 4);
 
-  auto innerBlock =
-      generateRandomCommandBlock(innerInstructionsCount, currentForDepth);
+    auto innerBlock = generateRandomCommandBlock(
+        innerInstructionsCount,
+        currentForDepth
+    );
 
-  return expandForLoop(innerBlock, repeats);
+    return std::make_shared<ForCommand>(innerBlock, repeats);
 }
 
-std::vector<std::shared_ptr<ICommand>> ProcessFactory::expandForLoop(
-    const std::vector<std::shared_ptr<ICommand>> &instructions, int repeats) {
-  std::vector<std::shared_ptr<ICommand>> expanded;
-
-  for (int i = 0; i < repeats; i++) {
-    for (const auto &instruction : instructions) {
-      expanded.push_back(instruction);
-    }
-  }
-  return expanded;
-}
 
 std::string ProcessFactory::randomVariableName() {
   return "var_" + std::to_string(std::rand() % 10);

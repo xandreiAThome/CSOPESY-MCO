@@ -21,6 +21,16 @@ public:
         int processId
     );
 
+    // Expand for command
+    static std::vector<std::shared_ptr<ICommand>> expandCommand(
+        const std::shared_ptr<ICommand>& command
+    );
+
+    static std::vector<std::shared_ptr<ICommand>> expandCommands(
+        const std::vector<std::shared_ptr<ICommand>>& commands
+    );
+
+
 private:
     static void generateRandomCommands(
         std::shared_ptr<Process> process,
@@ -34,14 +44,11 @@ private:
 
     static std::shared_ptr<ICommand> generateRandomBasicCommand();
 
-    static std::vector<std::shared_ptr<ICommand>> generateRandomForLoop(
+    static std::shared_ptr<ICommand> generateRandomForLoop(
         int currentForDepth
     );
 
-    static std::vector<std::shared_ptr<ICommand>> expandForLoop(
-        const std::vector<std::shared_ptr<ICommand>>& instructions,
-        int repeats
-    );
+    
 
     static std::string randomVariableName();
 };

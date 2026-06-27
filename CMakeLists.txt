@@ -22,7 +22,7 @@ add_executable(csopesy
   src/commands/add_command.cpp
   src/commands/subtract_command.cpp
   src/commands/sleep_command.cpp
-)
+ "src/commands/for_command.cpp")
 
 target_compile_features(csopesy PRIVATE cxx_std_20)
 target_include_directories(csopesy PRIVATE include)
