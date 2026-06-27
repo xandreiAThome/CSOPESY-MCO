@@ -28,6 +28,7 @@ public:
   void markWaiting(std::shared_ptr<Process> process);
   void markRunning(std::shared_ptr<Process> process);
   void markFinished(std::shared_ptr<Process> process);
+  void preempt(std::shared_ptr<Process> process, int coreId);
   std::string buildProcessReport();
   void printProcessReport();
   void writeProcessReportToFile();
