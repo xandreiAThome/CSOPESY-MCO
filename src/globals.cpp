@@ -99,8 +99,15 @@ bool Globals::init() {
 	}
 
 	// Validation
-	if (numCpu <= 0 || quantumCycles <= 0 || batchProcessFreq <= 0 ||
-		minIns < 0 || maxIns < 0 || minIns > maxIns || delayPerExec < 0) {
+	const unsigned long long MAX_VALUE = 1ULL << 32; // 2^32
+
+	if (numCpu < 1 || numCpu > 128 ||
+		quantumCycles < 1 || quantumCycles > MAX_VALUE ||
+		batchProcessFreq < 1 || batchProcessFreq > MAX_VALUE ||
+		minIns < 1 || minIns > MAX_VALUE ||
+		maxIns < 1 || maxIns > MAX_VALUE ||
+		minIns > maxIns ||
+		delayPerExec < 0 || delayPerExec > MAX_VALUE) {
 		std::cout << "Invalid settings values in config.txt\n";
 		return false;
 	}
