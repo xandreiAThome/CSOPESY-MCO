@@ -34,6 +34,12 @@ add_custom_command(TARGET csopesy POST_BUILD
 		  "$<TARGET_FILE_DIR:csopesy>/assets"
 )
 
+add_custom_command(TARGET csopesy POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy
+		  "${PROJECT_SOURCE_DIR}/config.txt"
+		  "$<TARGET_FILE_DIR:csopesy>/config.txt"
+)
+
 target_compile_options(csopesy PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8>
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic>
