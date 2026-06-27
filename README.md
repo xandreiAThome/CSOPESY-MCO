@@ -1,69 +1,89 @@
-# CSOPESY MCO
+# CSOPESY MCO — Process Scheduler Simulator
+
+## Author(s)
+- ESPONILLA ELLEXANDREI ALCERA
+- INTINO RADNY ASIS
+- MANGUBAT MARVIN IVAN CASTROVERDE
+- REGALA JOSE CARLOS ARRIOLA
+
+---
+
+## Entry Point & Main Function
+* **Main Function Location:** `src/main.cpp`
+* **Entry Manager Class:** `Console` ([include/console.hpp](include/console.hpp) / [src/console.cpp](src/console.cpp))
+
+---
 
 ## Requirements
 
 - CMake 3.21 or newer
 - A C++20-capable compiler
 - Linux/macOS: GNU Make or another CMake-compatible build tool
-- Windows: Visual Studio 2022 or Visual Studio Build Tools
+- Windows: Visual Studio 2022 / 2026 or Visual Studio Build Tools
+
+---
 
 ## Project Layout
 
-- `src/` - implementation files
-- `include/` - public headers
-- `build/` - local CMake build output
-- `openspec/` - OpenSpec change files and specs
+- `src/` - Implementation files (`main.cpp`, `console.cpp`, schedulers, commands)
+- `include/` - Public header files
+- `build/` - Local CMake build output
+- `assets/` - Simulator assets and text templates
+- `openspec/` - OpenSpec specification and change tracking files
 
-## Build
+---
 
-### Linux/macOS
+## Build Instructions
 
-Configure and build with the Linux presets:
+### Linux / macOS
+
+Configure and build with the debug preset:
 
 ```bash
 cmake --preset linux-debug
 cmake --build --preset linux-debug
 ```
 
-For a release build, use `linux-release` instead of `linux-debug`.
+For a release build, substitute `linux-debug` with `linux-release`.
 
 ### Windows
 
-Use the Windows presets with Visual Studio 2022:
+Use the Windows presets with Visual Studio or PowerShell:
 
 ```powershell
 cmake --preset windows-debug
 cmake --build --preset windows-debug
 ```
 
-For a release build, use `windows-release` instead of `windows-debug`.
+For a release build, substitute `windows-debug` with `windows-release`.
 
-## Visual Studio IDE Setup
+---
 
-To use the project in Visual Studio 2026:
+## Running the Simulator
 
-1. Open the project folder in Visual Studio.
-2. Let Visual Studio detect the CMake project automatically.
-3. Select the CMake preset you want to use, such as `windows-debug` or `windows-release`.
-4. Build and run from Visual Studio using the standard CMake controls.
+> **IMPORTANT:** The executable **must be run from the repository root directory** so it can find `config.txt` and `assets/introText.txt`.
 
-If Visual Studio asks for a kit or configuration, choose the Windows preset that matches the build type you want.
-
-## Visual Studio Code
-
-Open the folder in VS Code and use the CMake Tools extension.
-
-- On Linux/macOS, choose `linux-debug` or `linux-release`.
-- On Windows, choose `windows-debug` or `windows-release`.
-
-The project uses CMake presets, so VS Code can configure the same build layout consistently across machines.
-
-## Run
-
-After building, run the executable from the build directory:
+### Execution Command:
 
 ```bash
 ./build/linux-debug/csopesy
 ```
 
-On Windows, the executable is located in the matching preset build folder.
+*(On Windows, run `.\build\windows-debug\csopesy.exe`)*
+
+---
+
+## Simulator CLI Commands
+
+| Command | Allowed States | Description |
+| :--- | :--- | :--- |
+| `initialize` | Pre-init | Loads `config.txt` and initializes the process scheduler. |
+| `scheduler-test` | Main Menu | Starts periodic batch process generation. |
+| `scheduler-stop` | Main Menu | Stops periodic batch process generation. |
+| `screen -ls` | Main Menu | Displays CPU status, active cores, and process lists. |
+| `screen -s <name>` | Main Menu | Creates a new process and enters its dedicated screen. |
+| `screen -r <name>` | Main Menu | Resumes an existing process screen. |
+| `process-smi` | Process Screen | Displays process logs, state, and execution progress. |
+| `report-util` | Main Menu | Saves the full process utilization report to `csopesy-log.txt`. |
+| `clear` | Any | Clears the terminal screen. |
+| `exit` | Any | Exits process screen (back to menu) or shuts down simulator. |
