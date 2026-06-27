@@ -47,6 +47,11 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
       return;
     }
 
+    if (delay >= 0) {
+        waitForTicks(delay + 1);  // Delay = 0 should execute an instruction per tick
+    }
+
+    // Check quantum cycles after waiting
     if (isRR) {
       unsigned long long elapsed = Globals::get().cpuCycles.load() - burstStartTick;
       if (elapsed >= quantum) {
@@ -55,9 +60,6 @@ void CoreWorker::executeProcess(std::shared_ptr<Process> process) {
       }
     }
 
-    if (delay > 0) {
-      waitForTicks(delay);
-    }
   }
 
   if (process->hasFinished()) {
